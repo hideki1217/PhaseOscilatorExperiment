@@ -1,5 +1,5 @@
 #!/bin/bash
 
-./phase > phase_swap.csv
+./phase.elf
 python3 ./phase.py
-python3 ./phase_K.py 13
+python3 ./phase_K.py

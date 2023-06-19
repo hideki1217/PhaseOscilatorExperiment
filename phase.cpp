@@ -4,6 +4,7 @@
 // #define NDEBUG
 
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -121,70 +122,59 @@ class Swapper {
   std::uniform_real_distribution<> prob;
 };
 
-template <typename OFS>
-class CsvWriter {
-  /**
-   * TODO: よりシンプルに
-   */
- public:
-  enum class Mode { Header, Content } mode;
-
-  OFS &ofs;
-
-  CsvWriter(OFS &ofs, bool skip_header = false)
-      : mode(skip_header ? Mode::Content : Mode::Header), ofs(ofs) {}
-
-  void init(bool skip_header = false) {
-    is_first = true;
-    mode = skip_header ? Mode::Content : Mode::Header;
-  }
-
-  CsvWriter &header(char *x) {
-    assert(mode == Mode::Header);
-    if (is_first) {
-      ofs << x;
-      is_first = false;
-    } else {
-      ofs << "," << x;
-    }
-    return *this;
-  }
-
-  CsvWriter &content(double x) {
-    assert(mode == Mode::Content);
-    if (is_first) {
-      ofs << x;
-      is_first = false;
-    } else {
-      ofs << "," << x;
-    }
-    return *this;
-  }
-
-  CsvWriter &newrow() {
-    if (mode == Mode::Header) {
-      if (!is_first) {
-        ofs << std::endl;
-      }
-
-      mode = Mode::Content;
-      is_first = true;
-    }
-
-    if (mode == Mode::Content) {
-      if (!is_first) {
-        ofs << std::endl;
-      }
-
-      is_first = true;
-    }
-    return *this;
-  }
-
-  void complete() { newrow(); }
-
+class Csv {
  private:
-  bool is_first = true;
+  bool is_open = true;
+
+ public:
+  std::ofstream ofs;
+  Csv(const char *file) : ofs(std::ofstream(file)) {}
+
+  void close() {
+    assert(is_open);
+    is_open = false;
+    ofs.close();
+  }
+
+  void open(const char *file) {
+    assert(!is_open);
+    is_open = true;
+    ofs.open(file);
+  }
+
+  class Row {
+   private:
+    Csv &parent;
+    bool is_first = true;
+
+   public:
+    Row(Csv &parent) : parent(parent) {}
+    ~Row() { parent.ofs << std::endl; }
+
+    Row &content(double x) {
+      if (is_first) {
+        parent.ofs << x;
+        is_first = false;
+      } else {
+        parent.ofs << "," << x;
+      }
+      return *this;
+    }
+  };
+
+  Row new_row() { return Row(*this); }
+
+  template<typename Number>
+  void save_mtx(const char* filename, int nrow, int ncol, const Number *data) {
+    open(filename);
+    for (int i = 0; i < nrow; i++) {
+      auto row = new_row();
+      for (int j = 0; j < ncol; j++) {
+        row.content(data[i * ncol + j]);
+      }
+    }
+    close();
+  }
 };
 
 class PhaseRK4 {
@@ -311,6 +301,51 @@ class Energy {
   }
 };
 
+void save_param(const char *filename, int T_sampling,
+                const std::vector<double> &beta, double threshold, int burn_in,
+                int T_swap, const std::vector<double> &w0) {
+  std::ofstream ofs(filename);
+  {
+    auto now = std::chrono::system_clock::now();
+    std::time_t stamp = std::chrono::system_clock::to_time_t(now);
+    ofs << "#" << std::ctime(&stamp) << std::endl;
+  }
+  ofs << "T_sampling: " << T_sampling << std::endl;
+
+  ofs << "beta: [" << beta[0];
+  for (int i = 1; i < beta.size(); i++) ofs << "," << beta[i];
+  ofs << "]" << std::endl;
+
+  ofs << "threshold: " << threshold << std::endl;
+  ofs << "burn_in: " << burn_in << std::endl;
+  ofs << "T_swap: " << T_swap << std::endl;
+
+  ofs << "w0: [" << w0[0];
+  for (int i = 1; i < w0.size(); i++) ofs << "," << w0[i];
+  ofs << "]" << std::endl;
+}
+
+std::vector<double> symmetric(const std::vector<double>& left) {
+  // assume (i<j -> left[i] < left[j] && left[i] > 0)
+
+  std::vector<double> out;
+  
+  for(int i=left.size()-1; i>=0; i--) out.push_back(-left[i]);
+  out.push_back(0);
+  for(int i=0; i<left.size(); i++) out.push_back(left[i]);
+
+  return out;
+}
+
+template<typename Rng>
+std::vector<double> phase_unif(int n, Rng& rng) {
+  std::uniform_real_distribution<> unif(0, 2 * Pi);
+
+  std::vector<double> res(n);
+  for (int i = 0; i < n; i++) res[i] = unif(rng);
+  return res;
+}
+
 int main() {
   /**
    * TODO:
@@ -328,36 +363,30 @@ int main() {
    * <- 間隔を細かくした。並列数に対して計算量は線形にも増えない(並列化のおかげ)
    *
    */
-  Rng rng(42);
 
-  const auto N = 1000;
-  const auto T = 300;  // TODO: 決めないと
+  // MCMC param
+  const auto N_sample = 10;
+  const auto T_sampling = 200;  // TODO: 決めないと
+  const static int burn_in = 5000;
+  const int T_swap = 10;
+  const auto betas = std::vector<double>({0.1, 1.0, 10.});
+  // Phase param
+  const auto w_left =
+      std::vector<double>({0.268, 0.5773, 0.9998, 1.7311, 3.7298});
+  const double threshold = 0.99;
 
-  const auto betas = std::vector<double>(
-      {0.5, 0.7, 0.9, 1.2, 1.8, 2.3, 4.0, 5.0, 6.5, 10., 20., 34., 60.});
+  save_param("./phase_param.yaml", T_sampling, betas, threshold, burn_in,
+             T_swap, w_left);
+
   const auto R = betas.size();
-
+  Rng rng(42);
   std::vector<Rng> rngs;
   for (int i = 0; i < R; i++) rngs.push_back(Rng(rng()));
 
   // 位相振動子
-  const double threshold = 0.99;
-  std::vector<double> w0;
-  {
-    double w[] = {0.268, 0.5773, 0.9998, 1.7311, 3.7298};
-    w0.push_back(0);
-    for (int i = 0; i < sizeof(w) / sizeof(w[0]); i++) {
-      w0.push_back(w[i]);
-      w0.push_back(-w[i]);
-    }
-    std::sort(w0.begin(), w0.end());
-  }
+  auto w0 = symmetric(w_left);
   const int dim = w0.size();
-  std::vector<double> s0(dim);
-  {
-    std::uniform_real_distribution<> unif(0, 2 * Pi);
-    for (int i = 0; i < dim; i++) s0[i] = unif(rng);
-  }
+  auto s0 = phase_unif(dim, rng);
   std::vector<SkipMean> dynamics(R, SkipMean(PhaseRK4(w0, s0)));
   std::vector<Energy> H_list;
   for (auto &p : dynamics) {
@@ -378,56 +407,44 @@ int main() {
     }
   }
   auto swapper = Swapper(rng);
-  std::uniform_int_distribution<> swap_idx(0, R-2);
+  std::uniform_int_distribution<> swap_idx(0, R - 2);
 
   // hotin
 #pragma omp parallel for
   for (int j = 0; j < R; j++) {
-    reprica[j].update(5000);
+    reprica[j].update(burn_in);
   }
-
   // TODO: ここまでの状態をセーブできると何かと便利
 
-  std::ofstream ofs("./phase.csv");
-  CsvWriter writer(ofs, true);
-
-  std::vector<int> history(R);
-  for (int i = 0; i < R; i++) history[i] = i;
-
-  std::vector<double> Es(R * N);
+  Csv csv("./phase.csv");
+  std::vector<int> swapped(R);
+  for (int i = 0; i < R; i++) swapped[i] = i;
+  std::vector<int> swap_history(R * N_sample / T_swap);
+  std::vector<double> Es(R * N_sample);
   std::vector<double> state(R * dim);
-
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < N_sample; i++) {
 #pragma omp parallel for
     for (int j = 0; j < R; j++) {
-      auto s = reprica[j].update(T);
+      auto s = reprica[j].update(T_sampling);
 
       Es[i * R + j] = reprica[j].E();
       for (int k = 0; k < dim; k++) state[j * dim + k] = s[k];
     }
 
-    if (i % 10 == 0) {
+    if (i != 0 && i % T_swap == 0) {
       int target = swap_idx(rng);
       if (swapper.try_swap(reprica[target], reprica[target + 1])) {
-        std::swap(history[target], history[target + 1]);
+        std::swap(swapped[target], swapped[target + 1]);
       }
+      for (int j = 0; j < R; j++) swap_history[i * R + j] = swapped[j];
     }
 
-    for (auto s : state) writer.content(s);
-    writer.newrow();
-
-    std::cout << history[0];
-    for (int i = 1; i < R; i++) std::cout << "," << history[i];
-    std::cout << std::endl;
+    auto row = csv.new_row();
+    for (auto s : state) row.content(s);
   }
-  ofs.close();
+  std::cout << std::endl;
+  csv.close();
 
-  ofs.open("./phase_E.csv");
-  writer.init(true);
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < R; j++) {
-      writer.content(Es[i * R + j]);
-    }
-    writer.newrow();
-  }
+  csv.save_mtx("./phase_E.csv", N_sample, R, Es.data());
+  csv.save_mtx("./phase_swap.csv", N_sample / T_swap, R, swap_history.data());
 }

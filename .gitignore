@@ -5,3 +5,4 @@
 *.log
 *.out
 *.elf
+*_param.yaml

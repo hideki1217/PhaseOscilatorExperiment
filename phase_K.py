@@ -1,11 +1,15 @@
 import sys
+import yaml
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 
-C = int(sys.argv[1])
+with open("./phase_param.yaml") as f:
+    param = yaml.safe_load(f)
+
+C = len(param["beta"])
 
 K = np.loadtxt("./phase.csv", delimiter=",").T
 D = K.shape[0] // C

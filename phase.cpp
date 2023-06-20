@@ -2,14 +2,20 @@
 #include <omp.h>
 
 // #define NDEBUG
+// #define SKIP_BURNIN
 
 #include <cassert>
-#include <chrono>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <random>
+#include <chrono>
 #include <vector>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "phase.hpp"
+#include "phase.param.hpp"
+#include "utils.hpp"
 
 static const double Pi = 3.14159265358979;
 
@@ -49,7 +55,7 @@ class SymBolzmanMP {
     s = s_;
     _E = H(s);
   }
-  std::vector<double> &state() { return s; }
+  const std::vector<double> &state() const { return s; }
 
   void swap(SymBolzmanMP &rhs) {
     assert(dim == rhs.dim);
@@ -57,8 +63,8 @@ class SymBolzmanMP {
     std::swap(rhs._E, _E);
   }
 
-  double E() { return _E; }
-  double beta() { return _beta; }
+  double E() const { return _E; }
+  double beta() const { return _beta; }
 
   State &update() {
     auto idx = idx_table[unif(rng)];
@@ -122,163 +128,6 @@ class Swapper {
   std::uniform_real_distribution<> prob;
 };
 
-class Csv {
- private:
-  bool is_open = true;
-
- public:
-  std::ofstream ofs;
-  Csv(const char *file) : ofs(std::ofstream(file)) {}
-
-  void close() {
-    assert(is_open);
-    is_open = false;
-    ofs.close();
-  }
-
-  void open(const char *file) {
-    assert(!is_open);
-    is_open = true;
-    ofs.open(file);
-  }
-
-  class Row {
-   private:
-    Csv &parent;
-    bool is_first = true;
-
-   public:
-    Row(Csv &parent) : parent(parent) {}
-    ~Row() { parent.ofs << std::endl; }
-
-    Row &content(double x) {
-      if (is_first) {
-        parent.ofs << x;
-        is_first = false;
-      } else {
-        parent.ofs << "," << x;
-      }
-      return *this;
-    }
-  };
-
-  Row new_row() { return Row(*this); }
-
-  template<typename Number>
-  void save_mtx(const char* filename, int nrow, int ncol, const Number *data) {
-    open(filename);
-    for (int i = 0; i < nrow; i++) {
-      auto row = new_row();
-      for (int j = 0; j < ncol; j++) {
-        row.content(data[i * ncol + j]);
-      }
-    }
-    close();
-  }
-};
-
-class PhaseRK4 {
- public:
-  const int dim;
-  const double dt;
-
-  PhaseRK4(std::vector<double> &w0, std::vector<double> &s0, double dt = 0.01)
-      : dim(w0.size()), w0(w0), s(s0), dt(dt) {
-    assert(w0.size() == s0.size());
-
-    w.resize(dim);
-    k1.resize(dim);
-    k2.resize(dim);
-    k3.resize(dim);
-    _s.resize(dim);
-  }
-
-  void step(const std::vector<double> &K) {
-    assert(K.size() == dim * dim);
-
-    const auto dt2 = dt / 2;
-    const auto dt6 = dt / 6;
-    // 四次のルンゲクッタ法
-    velocity(dim, K.data(), w0.data(), s.data(), w.data());
-    for (int i = 0; i < dim; i++) _s[i] = s[i] + w[i] * dt2;
-    velocity(dim, K.data(), w0.data(), _s.data(), k1.data());
-    for (int i = 0; i < dim; i++) _s[i] = s[i] + k1[i] * dt2;
-    velocity(dim, K.data(), w0.data(), _s.data(), k2.data());
-    for (int i = 0; i < dim; i++) _s[i] = s[i] + k2[i] * dt;
-    velocity(dim, K.data(), w0.data(), _s.data(), k3.data());
-    for (int i = 0; i < dim; i++) k3[i] += w[i] + 2 * k1[i] + 2 * k2[i];
-    for (int i = 0; i < dim; i++) s[i] += k3[i] * dt6;
-  }
-
-  double phase_order() {
-    auto x = 0.0;
-    auto y = 0.0;
-    for (int i = 0; i < dim; i++) {
-      x += std::cos(s[i]);
-      y += std::sin(s[i]);
-    }
-    x /= dim;
-    y /= dim;
-    return std::sqrt(x * x + y * y);
-  }
-
-  double freq_order(double eps = 0.1) {
-    auto c = 0;
-    for (int i = 0; i < dim; i++) {
-      if (std::abs(w[i]) < eps) c++;
-    }
-    return double(c) / dim;
-  }
-
- private:
-  void velocity(int dim, const double *K, const double *w0, const double *s,
-                double *w) {
-    // assume: K is symmetric
-    assert(std::abs(K[1] - K[dim]) < 1e-8);
-
-    for (int i = 0; i < dim; i++) w[i] = w0[i];
-
-    for (int j = 0; j < dim; j++) {
-      auto s_j = s[j];
-      auto K_j = &K[j * dim];
-      for (int i = 0; i < dim; i++) {
-        w[i] -= K_j[i] * std::sin(s[i] - s_j);
-      }
-    }
-  }
-
-  std::vector<double> w0;
-  std::vector<double> s;
-
-  std::vector<double> w;
-  std::vector<double> k1;
-  std::vector<double> k2;
-  std::vector<double> k3;
-  std::vector<double> _s;
-};
-
-class SkipMean {
- public:
-  PhaseRK4 model;
-  SkipMean(PhaseRK4 model) : model(model) {}
-
-  double operator()(std::vector<double> &K) {
-    // TODO: hardcode
-    const int N_skip = 4000;
-    const int N_mean = 1000;
-
-    for (int i = 0; i < N_skip; i++) {
-      model.step(K);
-    }
-    double m = 0;
-    for (int i = 0; i < N_mean; i++) {
-      model.step(K);
-      m += (model.phase_order() - m) / (i + 1);
-    }
-    return m;
-  }
-};
-
 class Energy {
  public:
   const int dim;
@@ -287,7 +136,7 @@ class Energy {
   Energy(int dim, double threshold, SkipMean &score)
       : dim(dim), threshold(threshold), score(score) {}
 
-  double operator()(std::vector<double> &K) {
+  double operator()(const std::vector<double> &K) {
     const double inf = 1e10;
     for (auto k : K) {
       if (k < 0) return inf;
@@ -301,44 +150,20 @@ class Energy {
   }
 };
 
-void save_param(const char *filename, int T_sampling,
-                const std::vector<double> &beta, double threshold, int burn_in,
-                int T_swap, const std::vector<double> &w0) {
-  std::ofstream ofs(filename);
-  {
-    auto now = std::chrono::system_clock::now();
-    std::time_t stamp = std::chrono::system_clock::to_time_t(now);
-    ofs << "#" << std::ctime(&stamp) << std::endl;
-  }
-  ofs << "T_sampling: " << T_sampling << std::endl;
-
-  ofs << "beta: [" << beta[0];
-  for (int i = 1; i < beta.size(); i++) ofs << "," << beta[i];
-  ofs << "]" << std::endl;
-
-  ofs << "threshold: " << threshold << std::endl;
-  ofs << "burn_in: " << burn_in << std::endl;
-  ofs << "T_swap: " << T_swap << std::endl;
-
-  ofs << "w0: [" << w0[0];
-  for (int i = 1; i < w0.size(); i++) ofs << "," << w0[i];
-  ofs << "]" << std::endl;
-}
-
-std::vector<double> symmetric(const std::vector<double>& left) {
+std::vector<double> symmetric(const std::vector<double> &left) {
   // assume (i<j -> left[i] < left[j] && left[i] > 0)
 
   std::vector<double> out;
-  
-  for(int i=left.size()-1; i>=0; i--) out.push_back(-left[i]);
+
+  for (int i = left.size() - 1; i >= 0; i--) out.push_back(-left[i]);
   out.push_back(0);
-  for(int i=0; i<left.size(); i++) out.push_back(left[i]);
+  for (int i = 0; i < left.size(); i++) out.push_back(left[i]);
 
   return out;
 }
 
-template<typename Rng>
-std::vector<double> phase_unif(int n, Rng& rng) {
+template <typename Rng>
+std::vector<double> phase_unif(int n, Rng &rng) {
   std::uniform_real_distribution<> unif(0, 2 * Pi);
 
   std::vector<double> res(n);
@@ -346,7 +171,7 @@ std::vector<double> phase_unif(int n, Rng& rng) {
   return res;
 }
 
-int main() {
+void run(std::string& base) {
   /**
    * TODO:
    *  1. 収束判定の導入: オーダーが大きい領域で収束をどのように判定するか？
@@ -363,21 +188,6 @@ int main() {
    * <- 間隔を細かくした。並列数に対して計算量は線形にも増えない(並列化のおかげ)
    *
    */
-
-  // MCMC param
-  const auto N_sample = 10;
-  const auto T_sampling = 200;  // TODO: 決めないと
-  const static int burn_in = 5000;
-  const int T_swap = 10;
-  const auto betas = std::vector<double>({0.1, 1.0, 10.});
-  // Phase param
-  const auto w_left =
-      std::vector<double>({0.268, 0.5773, 0.9998, 1.7311, 3.7298});
-  const double threshold = 0.99;
-
-  save_param("./phase_param.yaml", T_sampling, betas, threshold, burn_in,
-             T_swap, w_left);
-
   const auto R = betas.size();
   Rng rng(42);
   std::vector<Rng> rngs;
@@ -385,66 +195,90 @@ int main() {
 
   // 位相振動子
   auto w0 = symmetric(w_left);
-  const int dim = w0.size();
-  auto s0 = phase_unif(dim, rng);
+  const int D_model = w0.size();
+  auto s0 = phase_unif(D_model, rng);
   std::vector<SkipMean> dynamics(R, SkipMean(PhaseRK4(w0, s0)));
   std::vector<Energy> H_list;
   for (auto &p : dynamics) {
-    H_list.push_back(Energy(dim, threshold, p));
+    H_list.push_back(Energy(D_model, threshold, p));
   }
 
   std::vector<SymBolzmanMP<Energy>> reprica;
   {
     // 絶対同期する結合を初期値に
-    std::vector<double> K0(dim * dim, 10);
-    for (int i = 0; i < dim; i++) K0[i * dim + i] = 0;
+    std::vector<double> K0(D_model * D_model, 10);
+    for (int i = 0; i < D_model; i++) K0[i * D_model + i] = 0;
 
     for (int i = 0; i < R; i++) {
-      auto m = SymBolzmanMP(dim * dim, H_list[i], betas[i], rngs[i]);
+      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i]);
       m.set_state(K0);
 
       reprica.push_back(std::move(m));
     }
   }
+  const int D_state = reprica[0].dim;
   auto swapper = Swapper(rng);
   std::uniform_int_distribution<> swap_idx(0, R - 2);
 
   // hotin
+#ifndef SKIP_BURNIN
 #pragma omp parallel for
   for (int j = 0; j < R; j++) {
     reprica[j].update(burn_in);
   }
+#endif
   // TODO: ここまでの状態をセーブできると何かと便利
 
-  Csv csv("./phase.csv");
+  Csv csv((base + "phase.csv").c_str());
   std::vector<int> swapped(R);
   for (int i = 0; i < R; i++) swapped[i] = i;
   std::vector<int> swap_history(R * N_sample / T_swap);
   std::vector<double> Es(R * N_sample);
-  std::vector<double> state(R * dim);
+  std::vector<double> state(R * D_state);
   for (int i = 0; i < N_sample; i++) {
 #pragma omp parallel for
     for (int j = 0; j < R; j++) {
       auto s = reprica[j].update(T_sampling);
 
       Es[i * R + j] = reprica[j].E();
-      for (int k = 0; k < dim; k++) state[j * dim + k] = s[k];
+      for (int k = 0; k < D_state; k++) state[j * D_state + k] = s[k];
     }
 
-    if (i != 0 && i % T_swap == 0) {
+    if (i % T_swap == 0) {
       int target = swap_idx(rng);
       if (swapper.try_swap(reprica[target], reprica[target + 1])) {
         std::swap(swapped[target], swapped[target + 1]);
       }
-      for (int j = 0; j < R; j++) swap_history[i * R + j] = swapped[j];
+      for (int j = 0; j < R; j++) {
+        swap_history[(i / T_swap) * R + j] = swapped[j];
+      }
     }
 
     auto row = csv.new_row();
     for (auto s : state) row.content(s);
   }
-  std::cout << std::endl;
   csv.close();
 
-  csv.save_mtx("./phase_E.csv", N_sample, R, Es.data());
-  csv.save_mtx("./phase_swap.csv", N_sample / T_swap, R, swap_history.data());
+  csv.save_mtx((base + "phase_E.csv").c_str(), N_sample, R, Es.data());
+  csv.save_mtx((base + "phase_swap.csv").c_str(), N_sample / T_swap, R, swap_history.data());
+
+  std::ofstream ofs("./phase.out");
+  ofs << base << std::endl;
+}
+
+int main() {
+  std::string base;
+  {
+    auto now = std::chrono::system_clock::now();
+    std::time_t stamp = std::chrono::system_clock::to_time_t(now);
+    base = "./output/" + std::string(std::ctime(&stamp)) + "/";
+    mkdir(base.c_str(), 0777);
+  }
+  try{
+    save_param((base + "phase_param.yaml").c_str());
+    run(base);
+  }
+  catch(std::exception) {
+    rmdir(base.c_str());
+  }
 }

@@ -1,5 +1,5 @@
 CXX=icpx
-CXXFLAGS=-std=c++17 -O3
+CXXFLAGS=-std=c++17 -fast
 # CXXFLAGS=-std=c++17 -g
 
 # LDFLAGS=-pg

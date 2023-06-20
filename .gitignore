@@ -1,8 +1,10 @@
 .vscode/
+output/
 
 *.png
 *.csv
 *.log
 *.out
 *.elf
-*_param.yaml
+
+*param.hpp

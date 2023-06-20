@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 cwd = Path(__file__).absolute().parent
 with open(cwd / "phase.out") as f:
     data = Path(f.readline())
-with open("./phase_param.yaml") as f:
+with open(data / "phase_param.yaml") as f:
     param = yaml.safe_load(f)
 
 # 交換の図
@@ -31,7 +31,7 @@ plt.close()
 
 # クラスタの数を計算
 C = len(param["beta"])
-K = np.loadtxt("./phase.csv", delimiter=",").T
+K = np.loadtxt(data / "phase.csv", delimiter=",").T
 D = K.shape[0] // C
 K_top = K[D*(C-1):].T
 distortions = []

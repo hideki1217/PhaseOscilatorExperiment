@@ -6,5 +6,6 @@ output/
 *.log
 *.out
 *.elf
+*.yaml
 
 *param.hpp

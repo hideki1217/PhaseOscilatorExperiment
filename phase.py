@@ -4,6 +4,8 @@ from pathlib import Path
 import yaml
 from sklearn.cluster import KMeans
 
+import utils
+
 cwd = Path(__file__).absolute().parent
 with open(cwd / "phase.out") as f:
     data = Path(f.readline())
@@ -23,7 +25,8 @@ plt.close()
 # エネルギー分布
 x = np.loadtxt(data / "phase_E.csv", delimiter=",").T
 for i in range(x.shape[0]):
-    plt.hist(x[i], bins=200, alpha=1.0 - (1.0 - 0.5) / x.shape[0] * (x.shape[0] - 1 - i), label=f"{i}")
+    plt.hist(x[i], bins=200, alpha=1.0 - (1.0 - 0.5) /
+             x.shape[0] * (x.shape[0] - 1 - i), label=f"{i}")
 plt.legend()
 plt.tight_layout()
 plt.savefig(data / "phase_E.png")
@@ -37,16 +40,22 @@ K_top = K[D*(C-1):].T
 distortions = []
 ns = list(range(1, min(21, K.shape[1])))
 for i in ns:
-    print(i)
     km = KMeans(n_clusters=i,
                 init='k-means++',     # k-means++法によりクラスタ中心を選択
                 n_init=10,
                 max_iter=300,
                 random_state=0)
     km.fit(K_top)                         # クラスタリングの計算を実行
-    distortions.append(km.inertia_) 
+    distortions.append(km.inertia_)
 plt.plot(ns, distortions, marker='o')
 plt.xlabel('Number of clusters')
 plt.ylabel('Distortion')
 plt.savefig(data / "phase_K_cluster.png")
 plt.close()
+
+
+with open(cwd / "nohup.out") as f:
+    stdout = '\n'.join(f.readlines())
+utils.email_me(
+    '[phase] Notification of end of execution',
+    f"------- nohup.out -------\n{stdout}\n------------------")

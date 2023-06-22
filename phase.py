@@ -4,8 +4,6 @@ from pathlib import Path
 import yaml
 from sklearn.cluster import KMeans
 
-import utils
-
 cwd = Path(__file__).absolute().parent
 with open(cwd / "phase.out") as f:
     data = Path(f.readline())
@@ -13,10 +11,11 @@ with open(data / "phase_param.yaml") as f:
     param = yaml.safe_load(f)
 
 # 交換の図
-x = np.loadtxt(data / "phase_swap.csv", delimiter=",").T
-index = list(range(x.shape[1]))
-plt.plot(index, x[0], label=f"{0}")
-plt.plot(index, x[-1], label=f"{x.shape[0]-1}")
+x = np.loadtxt(data / "phase_swap.csv", delimiter=",")
+index = list(range(x.shape[0]))
+plt.plot(index, np.where(x==0)[1], label=f"{0}")
+plt.plot(index, np.where(x==x.shape[1]//2)[1], label=f"{x.shape[1]//2}")
+plt.plot(index, np.where(x==x.shape[1]-1)[1], label=f"{x.shape[1]-1}")
 plt.legend()
 plt.tight_layout()
 plt.savefig(data / "phase_swap.png")
@@ -52,10 +51,3 @@ plt.xlabel('Number of clusters')
 plt.ylabel('Distortion')
 plt.savefig(data / "phase_K_cluster.png")
 plt.close()
-
-
-with open(cwd / "nohup.out") as f:
-    stdout = '\n'.join(f.readlines())
-utils.email_me(
-    '[phase] Notification of end of execution',
-    f"------- nohup.out -------\n{stdout}\n------------------")

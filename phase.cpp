@@ -13,6 +13,8 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include <iomanip>
+#include <sstream>
 
 #include "phase.hpp"
 #include "phase.param.hpp"
@@ -281,7 +283,10 @@ int main() {
   {
     auto now = std::chrono::system_clock::now();
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
-    base = "./output/" + std::string(std::ctime(&stamp)) + "/";
+    const std::tm* lt = std::localtime(&stamp);
+    std::stringstream ss;
+    ss << "./output/" << std::put_time(lt, "%c") << "/";
+    base = ss.str();
     mkdir(base.c_str(), 0777);
   }
   try {

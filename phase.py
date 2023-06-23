@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 
 cwd = Path(__file__).absolute().parent
 with open(cwd / "phase.out") as f:
-    data = Path(f.readline())
+    data = Path(f.readline().strip())
 with open(data / "phase_param.yaml") as f:
     param = yaml.safe_load(f)
 

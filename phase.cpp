@@ -4,14 +4,15 @@
 // #define NDEBUG
 // #define SKIP_BURNIN
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <cassert>
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <random>
-#include <chrono>
 #include <vector>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "phase.hpp"
 #include "phase.param.hpp"
@@ -171,7 +172,7 @@ std::vector<double> phase_unif(int n, Rng &rng) {
   return res;
 }
 
-void run(std::string& base) {
+void run(std::string &base) {
   /**
    * TODO:
    *  1. 収束判定の導入: オーダーが大きい領域で収束をどのように判定するか？
@@ -217,21 +218,31 @@ void run(std::string& base) {
     }
   }
   const int D_state = reprica[0].dim;
+
   auto swapper = Swapper(rng);
-  std::uniform_int_distribution<> swap_idx(0, R - 2);
+  std::uniform_int_distribution<> random_swap_idx(0, R - 2);
+  std::vector<int> swapped(R);
+  for (int i = 0; i < R; i++) swapped[i] = i;
+  auto random_swap = [&](bool sync = true) {
+    int target = random_swap_idx(rng);
+    if (swapper.try_swap(reprica[target], reprica[target + 1])) {
+      if (sync) std::swap(swapped[target], swapped[target + 1]);
+    }
+  };
 
   // hotin
 #ifndef SKIP_BURNIN
+  for (int i = 0; i < burn_in / T_sampling; i++) {
 #pragma omp parallel for
-  for (int j = 0; j < R; j++) {
-    reprica[j].update(burn_in);
+    for (int j = 0; j < R; j++) {
+      reprica[j].update(T_sampling);
+    }
+    if (i % T_swap == 0) random_swap(false);
   }
 #endif
   // TODO: ここまでの状態をセーブできると何かと便利
 
   Csv csv((base + "phase.csv").c_str());
-  std::vector<int> swapped(R);
-  for (int i = 0; i < R; i++) swapped[i] = i;
   std::vector<int> swap_history(R * N_sample / T_swap);
   std::vector<double> Es(R * N_sample);
   std::vector<double> state(R * D_state);
@@ -245,10 +256,8 @@ void run(std::string& base) {
     }
 
     if (i % T_swap == 0) {
-      int target = swap_idx(rng);
-      if (swapper.try_swap(reprica[target], reprica[target + 1])) {
-        std::swap(swapped[target], swapped[target + 1]);
-      }
+      random_swap(true);
+
       for (int j = 0; j < R; j++) {
         swap_history[(i / T_swap) * R + j] = swapped[j];
       }
@@ -260,7 +269,8 @@ void run(std::string& base) {
   csv.close();
 
   csv.save_mtx((base + "phase_E.csv").c_str(), N_sample, R, Es.data());
-  csv.save_mtx((base + "phase_swap.csv").c_str(), N_sample / T_swap, R, swap_history.data());
+  csv.save_mtx((base + "phase_swap.csv").c_str(), N_sample / T_swap, R,
+               swap_history.data());
 
   std::ofstream ofs("./phase.out");
   ofs << base << std::endl;
@@ -274,11 +284,10 @@ int main() {
     base = "./output/" + std::string(std::ctime(&stamp)) + "/";
     mkdir(base.c_str(), 0777);
   }
-  try{
+  try {
     save_param((base + "phase_param.yaml").c_str());
     run(base);
-  }
-  catch(std::exception) {
+  } catch (...) {
     rmdir(base.c_str());
   }
 }

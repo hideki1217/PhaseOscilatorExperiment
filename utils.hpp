@@ -30,7 +30,8 @@ class Csv {
     Row(Csv &parent) : parent(parent) {}
     ~Row() { parent.ofs << std::endl; }
 
-    Row &content(double x) {
+    template<typename T>
+    Row &content(T x) {
       if (is_first) {
         parent.ofs << x;
         is_first = false;

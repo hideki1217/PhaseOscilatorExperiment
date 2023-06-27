@@ -287,7 +287,7 @@ int main() {
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
     const std::tm *lt = std::localtime(&stamp);
     std::stringstream ss;
-    ss << "./output/" << std::put_time(lt, "%c") << "/";
+    ss << "./output/phase" << std::put_time(lt, "%c") << "/";
     base = ss.str();
     mkdir(base.c_str(), 0777);
   }

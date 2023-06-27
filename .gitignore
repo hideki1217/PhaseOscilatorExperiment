@@ -1,6 +1,7 @@
 .vscode/
 output/
 __pycache__/
+tmp/
 
 *.png
 *.csv

@@ -10,11 +10,11 @@
 #include <cassert>
 #include <chrono>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <random>
-#include <vector>
-#include <iomanip>
 #include <sstream>
+#include <vector>
 
 #include "phase.hpp"
 #include "phase.param.hpp"
@@ -226,9 +226,11 @@ void run(std::string &base) {
   std::vector<int> swapped(R);
   for (int i = 0; i < R; i++) swapped[i] = i;
   auto random_swap = [&](bool sync = true) {
-    int target = random_swap_idx(rng);
-    if (swapper.try_swap(reprica[target], reprica[target + 1])) {
-      if (sync) std::swap(swapped[target], swapped[target + 1]);
+    static int c = 0;
+    for (int target = (c++) % 2; target + 1 < R; target += 2) {
+      if (swapper.try_swap(reprica[target], reprica[target + 1])) {
+        if (sync) std::swap(swapped[target], swapped[target + 1]);
+      }
     }
   };
 
@@ -283,7 +285,7 @@ int main() {
   {
     auto now = std::chrono::system_clock::now();
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
-    const std::tm* lt = std::localtime(&stamp);
+    const std::tm *lt = std::localtime(&stamp);
     std::stringstream ss;
     ss << "./output/" << std::put_time(lt, "%c") << "/";
     base = ss.str();

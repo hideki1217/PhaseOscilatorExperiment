@@ -1,6 +1,6 @@
-#include <vector>
 #include <cassert>
 #include <cmath>
+#include <vector>
 
 class PhaseRK4 {
  public:
@@ -85,21 +85,21 @@ class PhaseRK4 {
 class SkipMean {
  public:
   PhaseRK4 model;
-  SkipMean(PhaseRK4 model) : model(model) {}
+  const int steps_burnin;
+  const int steps_eval;
+
+  SkipMean(PhaseRK4 model, int steps_burnin, int steps_eval)
+      : model(model), steps_burnin(steps_burnin), steps_eval(steps_eval) {}
 
   double operator()(const std::vector<double> &K) {
-    // TODO: hardcode
-    const static int N_skip = 3000;
-    const static int N_mean = 1000;
-
-    for (int i = 0; i < N_skip; i++) {
+    for (int i = 0; i < steps_burnin; i++) {
       model.step(K);
     }
     double m = 0;
-    for (int i = 0; i < N_mean; i++) {
+    for (int i = 0; i < steps_eval; i++) {
       model.step(K);
-      m += model.phase_order();
+      m += model.phase_order(); // O(1)
     }
-    return m / N_mean;
+    return m / steps_eval;
   }
 };

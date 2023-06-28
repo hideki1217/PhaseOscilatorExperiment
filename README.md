@@ -34,6 +34,7 @@ const auto T_sampling = 200;  // TODO: 決めないと
 const static int burn_in = 10000;
 const int T_swap = 10;
 const auto betas = std::vector<double>({0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6., 10., 14., 20.});
+const auto step_size = std::vector<double>(betas.size(), 1.0);
 // Phase param
 const auto w_left =
     std::vector<double>({0.2682, 0.5776, 0.9995, 1.732, 3.7328});

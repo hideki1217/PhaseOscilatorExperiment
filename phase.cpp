@@ -60,6 +60,12 @@ class SymBolzmanMP {
   }
   const std::vector<double> &state() const { return s; }
 
+  void reset_statistics() {
+    num_update = 0;
+    num_accept = 0;
+  }
+  double accept_rate() { return double(num_accept) / num_update; }
+
   void swap(SymBolzmanMP &rhs) {
     assert(dim == rhs.dim);
     rhs.s.swap(s);
@@ -70,6 +76,8 @@ class SymBolzmanMP {
   double beta() const { return _beta; }
 
   State &update() {
+    num_update++;
+    
     auto idx = idx_table[unif(rng)];
     auto xdi = _sq_dim * (idx % _sq_dim) + (idx / _sq_dim);
 
@@ -81,6 +89,7 @@ class SymBolzmanMP {
     auto E = H(s);
     if (_E >= E || std::exp(_beta * (_E - E)) >= unifr(rng)) {
       _E = E;
+      num_accept++;
     } else {
       s[idx] = mem;
       s[xdi] = mem;
@@ -108,6 +117,8 @@ class SymBolzmanMP {
   State s;
   int _sq_dim;
   std::vector<int> idx_table;
+  int num_accept = 0;
+  int num_update = 0;
 };
 
 class Swapper {
@@ -214,7 +225,7 @@ void run(std::string &base) {
     for (int i = 0; i < D_model; i++) K0[i * D_model + i] = 0;
 
     for (int i = 0; i < R; i++) {
-      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i]);
+      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i], step_size[i]);
       m.set_state(K0);
 
       reprica.push_back(std::move(m));
@@ -276,6 +287,17 @@ void run(std::string &base) {
   csv.save_mtx((base + "phase_E.csv").c_str(), N_sample, R, Es.data());
   csv.save_mtx((base + "phase_swap.csv").c_str(), N_sample / T_swap, R,
                swap_history.data());
+  
+  csv.open((base + "reprica_stat.csv").c_str());
+  {
+    auto row = csv.new_row();
+    for (auto r : reprica) row.content(r.beta());
+  }
+  {
+    auto row = csv.new_row();
+    for (auto r : reprica) row.content(r.accept_rate());
+  }
+  csv.close();
 
   std::ofstream ofs("./phase.out");
   ofs << base << std::endl;
@@ -288,7 +310,7 @@ int main() {
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
     const std::tm *lt = std::localtime(&stamp);
     std::stringstream ss;
-    ss << "./output/phase" << std::put_time(lt, "%c") << "/";
+    ss << "./output/phase/" << std::put_time(lt, "%c") << "/";
     base = ss.str();
     mkdir(base.c_str(), 0777);
   }

@@ -200,7 +200,8 @@ void run(std::string &base) {
   auto w0 = symmetric(w_left);
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
-  std::vector<SkipMean> dynamics(R, SkipMean(PhaseRK4(w0, s0)));
+  std::vector<SkipMean> dynamics(
+      R, SkipMean(PhaseRK4(w0, s0), int(all_steps * (1 - p_eval)), int(all_steps * p_eval)));
   std::vector<Energy> H_list;
   for (auto &p : dynamics) {
     H_list.push_back(Energy(D_model, threshold, p));

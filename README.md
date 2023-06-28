@@ -38,6 +38,8 @@ const auto betas = std::vector<double>({0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6., 
 const auto w_left =
     std::vector<double>({0.2682, 0.5776, 0.9995, 1.732, 3.7328});
 const double threshold = 0.99;
+const int all_steps = 5000;
+const double p_eval = 0.2;
 
 void save_param(const char *filename) {
   std::ofstream ofs(filename);
@@ -60,5 +62,8 @@ void save_param(const char *filename) {
   ofs << "w0: [" << w_left[0];
   for (int i = 1; i < w_left.size(); i++) ofs << "," << w_left[i];
   ofs << "]" << std::endl;
+  
+  ofs << "all_steps: " << all_steps << std::endl;
+  ofs << "p_eval: " << p_eval << std::endl;
 }
 ```

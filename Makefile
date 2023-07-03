@@ -4,22 +4,16 @@ CXXFLAGS=-std=c++17 -fast
 
 # LDFLAGS=-pg
 
-const: const.cpp
-	${CXX} ${CXXFLAGS} const.cpp -o $@.elf
-
-mixture: mixture.cpp
-	${CXX} ${CXXFLAGS} mixture.cpp -o $@.elf
-
-parallel: parallel.cpp
-	${CXX} ${CXXFLAGS} parallel.cpp -o $@.elf
-
 phase: phase.cpp
 	${CXX} ${CXXFLAGS} -qopenmp phase.cpp -o $@.elf
 
-build: const mixture parallel phase
+build: phase
 
 clean: 
-	rm const mixture parallel phase
+	rm phase
 
 run: phase
-	nohup ./phase > phase_swap.csv; python3 ./phase.py; python3 ./phase_K.py
+	./phase.sh
+
+asyncrun: phase
+	nohup ./phase.sh

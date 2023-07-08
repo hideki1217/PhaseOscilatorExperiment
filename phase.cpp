@@ -142,12 +142,13 @@ class Swapper {
   std::uniform_real_distribution<> prob;
 };
 
+template<typename Score>
 class Energy {
  public:
   const int dim;
   const double threshold;
-  SkipMean &score;
-  Energy(int dim, double threshold, SkipMean &score)
+  SkipMean<Score> &score;
+  Energy(int dim, double threshold, SkipMean<Score> &score)
       : dim(dim), threshold(threshold), score(score) {}
 
   double operator()(const std::vector<double> &K) {
@@ -211,14 +212,13 @@ void run(std::string &base) {
   auto w0 = symmetric(w_left);
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
-  std::vector<SkipMean> dynamics(
-      R, SkipMean(PhaseRK4(w0, s0), int(all_steps * (1 - p_eval)), int(all_steps * p_eval)));
-  std::vector<Energy> H_list;
+  auto dynamics = std::vector(R, SkipMean<S>(PhaseRK4(w0, s0), int(all_steps * (1 - p_eval)), int(all_steps * p_eval)));
+  std::vector<Energy<S>> H_list;
   for (auto &p : dynamics) {
     H_list.push_back(Energy(D_model, threshold, p));
   }
 
-  std::vector<SymBolzmanMP<Energy>> reprica;
+  std::vector<SymBolzmanMP<Energy<S>>> reprica;
   {
     // 絶対同期する結合を初期値に
     std::vector<double> K0(D_model * D_model, 10);

@@ -83,19 +83,22 @@ class PhaseRK4 {
 };
 
 class PScore {
-public:
-  inline double operator() (const PhaseRK4& model) { return model.phase_order(); }
+ public:
+  inline double operator()(const PhaseRK4 &model) {
+    return model.phase_order();
+  }
 };
 
 class FScore {
-public:
-  inline double operator() (const PhaseRK4& model) { return model.freq_order(); }
+ public:
+  inline double operator()(const PhaseRK4 &model) { return model.freq_order(); }
 };
 
-template<typename Score=PScore>
+template <typename Score = PScore>
 class SkipMean {
  private:
   Score score;
+
  public:
   PhaseRK4 model;
   const int steps_burnin;
@@ -111,8 +114,54 @@ class SkipMean {
     double m = 0;
     for (int i = 0; i < steps_eval; i++) {
       model.step(K);
-      m += score(model); // O(1)
+      m += score(model);  // O(1)
     }
     return m / steps_eval;
+  }
+};
+
+template <typename Score>
+class ConvMean {
+ private:
+  Score score;
+  std::vector<double> window;
+  double ms[2] = {0, 0};
+  int c = 0;
+
+ public:
+  PhaseRK4 model;
+  const double eps;
+  const int window_size;
+
+  ConvMean(PhaseRK4 model, int window, double eps = 0.0001)
+      : model(model), eps(eps), window_size(window) {
+    this->window.resize(window * 2, 0.0);
+  }
+
+  int loop_count() { return c; }
+
+  bool check(double v) {
+    int first = c % window.size();
+    int second = (c + window_size) % window.size();
+
+    ms[0] += window[second] - window[first];
+    ms[1] += v - window[second];
+
+    window[first] = v;
+    c++;
+
+    return (c <= window.size()) ? false
+                                : std::abs(ms[0] - ms[1]) < eps * window_size;
+  }
+
+  double value() { return ms[1] / (window_size); }
+
+  double operator()(const std::vector<double> &K) {
+    double res;
+    do {
+      model.step(K);
+      res = score(model);
+    } while (!check(res));
+    return value();
   }
 };

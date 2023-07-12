@@ -20,10 +20,6 @@
 #include "phase.param.hpp"
 #include "utils.hpp"
 
-static const double Pi = 3.14159265358979;
-
-using Rng = std::mt19937;
-
 template <typename Energy>
 class SymBolzmanMP {
  public:
@@ -77,7 +73,7 @@ class SymBolzmanMP {
 
   State &update() {
     num_update++;
-    
+
     auto idx = idx_table[unif(rng)];
     auto xdi = _sq_dim * (idx % _sq_dim) + (idx / _sq_dim);
 
@@ -142,13 +138,13 @@ class Swapper {
   std::uniform_real_distribution<> prob;
 };
 
-template<typename Score>
+template <typename Score>
 class Energy {
  public:
   const int dim;
   const double threshold;
-  SkipMean<Score> &score;
-  Energy(int dim, double threshold, SkipMean<Score> &score)
+  Score &score;
+  Energy(int dim, double threshold, Score &score)
       : dim(dim), threshold(threshold), score(score) {}
 
   double operator()(const std::vector<double> &K) {
@@ -212,20 +208,22 @@ void run(std::string &base) {
   auto w0 = symmetric(w_left);
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
-  auto dynamics = std::vector(R, SkipMean<S>(PhaseRK4(w0, s0), int(all_steps * (1 - p_eval)), int(all_steps * p_eval)));
-  std::vector<Energy<S>> H_list;
+  auto dynamics = std::vector(
+      R, ConvMean<S>(PhaseRK4(w0, s0), converge_window, converge_eps));
+  std::vector<Energy<ConvMean<S>>> H_list;
   for (auto &p : dynamics) {
     H_list.push_back(Energy(D_model, threshold, p));
   }
 
-  std::vector<SymBolzmanMP<Energy<S>>> reprica;
+  std::vector<SymBolzmanMP<Energy<ConvMean<S>>>> reprica;
   {
     // 絶対同期する結合を初期値に
     std::vector<double> K0(D_model * D_model, 10);
     for (int i = 0; i < D_model; i++) K0[i * D_model + i] = 0;
 
     for (int i = 0; i < R; i++) {
-      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i], step_size[i]);
+      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i],
+                            step_size[i]);
       m.set_state(K0);
 
       reprica.push_back(std::move(m));
@@ -287,7 +285,7 @@ void run(std::string &base) {
   csv.save_mtx((base + "phase_E.csv").c_str(), N_sample, R, Es.data());
   csv.save_mtx((base + "phase_swap.csv").c_str(), N_sample / T_swap, R,
                swap_history.data());
-  
+
   csv.open((base + "reprica_stat.csv").c_str());
   {
     auto row = csv.new_row();

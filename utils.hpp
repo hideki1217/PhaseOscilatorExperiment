@@ -56,3 +56,7 @@ class Csv {
     close();
   }
 };
+
+static const double Pi = 3.14159265358979;
+
+using Rng = std::mt19937;

@@ -2,6 +2,7 @@
 output/
 __pycache__/
 tmp/
+build/
 
 *.png
 *.csv

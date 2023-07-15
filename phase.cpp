@@ -183,22 +183,6 @@ std::vector<double> phase_unif(int n, Rng &rng) {
 }
 
 void run(std::string &base) {
-  /**
-   * TODO:
-   *  1. 収束判定の導入: オーダーが大きい領域で収束をどのように判定するか？
-   *  2. 更新則の対称化: 現状更新則は非対称
-   * <- hardcodingした
-   *
-   *  3. 計算の並列化:
-   * 現状シングルスレッドで計算している。rngはそれぞれのスレッドに必要
-   * <- OpneMPで簡易な並列化を実装
-   *
-   *  4. オーダーを出力するための再設計:
-   * 現状ではオーダーが見えない。構造を変えてよりみやすく
-   *  5. 交換が十分に起こっていいない: 温度の間隔を調整しないといけない
-   * <- 間隔を細かくした。並列数に対して計算量は線形にも増えない(並列化のおかげ)
-   *
-   */
   const auto R = betas.size();
   Rng rng(42);
   std::vector<Rng> rngs;
@@ -209,7 +193,7 @@ void run(std::string &base) {
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
   auto dynamics = std::vector(
-      R, ConvMean<S>(PhaseRK4(w0, s0), converge_window, converge_eps));
+      R, ConvMean<S>(PhaseRK4(w0, s0), converge_window, converge_eps, converge_limit));
   std::vector<Energy<ConvMean<S>>> H_list;
   for (auto &p : dynamics) {
     H_list.push_back(Energy(D_model, threshold, p));
@@ -294,6 +278,10 @@ void run(std::string &base) {
   {
     auto row = csv.new_row();
     for (auto r : reprica) row.content(r.accept_rate());
+  }
+  {
+    auto row = csv.new_row();
+    for (auto r : reprica) row.content(r.H.score.converge_failure_rate());
   }
   csv.close();
 

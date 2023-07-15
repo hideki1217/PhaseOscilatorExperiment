@@ -128,17 +128,30 @@ class ConvMean {
   double ms[2] = {0, 0};
   int c = 0;
 
+  int reset_count = 0;
+  int converge_failure = 0;
+
  public:
   PhaseRK4 model;
   const double eps;
   const int window_size;
+  const int limit;
 
-  ConvMean(PhaseRK4 model, int window, double eps = 0.0001)
-      : model(model), eps(eps), window_size(window) {
+  ConvMean(PhaseRK4 model, int window, double eps, int limit)
+      : model(model), eps(eps), window_size(window), limit(limit) {
     this->window.resize(window * 2, 0.0);
   }
 
   int loop_count() { return c; }
+  double converge_failure_rate() { return double(converge_failure) / reset_count; }
+
+  void reset() {
+    reset_count++;
+
+    c = 0;
+    ms[0] = ms[1] = 0;
+    std::fill(window.begin(), window.end(), 0);
+  }
 
   bool check(double v) {
     int first = c % window.size();
@@ -149,15 +162,20 @@ class ConvMean {
 
     window[first] = v;
     c++;
-
-    return (c <= window.size()) ? false
-                                : std::abs(ms[0] - ms[1]) < eps * window_size;
+    if (c >= limit){
+      converge_failure++;
+      return true;
+    }
+    return (c <= window.size() + 1)
+               ? false
+               : std::abs(ms[0] - ms[1]) < eps * window_size;
   }
 
   double value() { return ms[1] / (window_size); }
 
   double operator()(const std::vector<double> &K) {
     double res;
+    reset();
     do {
       model.step(K);
       res = score(model);

@@ -20,6 +20,10 @@ class PhaseRK4 {
     _s.resize(dim);
   }
 
+  void set_state(const std::vector<double> &s) {
+    this->s = s;
+  }
+
   void step(const std::vector<double> &K) {
     assert(K.size() == dim * dim);
 

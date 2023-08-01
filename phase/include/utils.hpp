@@ -1,5 +1,8 @@
-#include <fstream>
+#pragma once
+
 #include <cassert>
+#include <fstream>
+#include <random>
 
 class Csv {
  private:
@@ -30,7 +33,7 @@ class Csv {
     Row(Csv &parent) : parent(parent) {}
     ~Row() { parent.ofs << std::endl; }
 
-    template<typename T>
+    template <typename T>
     Row &content(T x) {
       if (is_first) {
         parent.ofs << x;

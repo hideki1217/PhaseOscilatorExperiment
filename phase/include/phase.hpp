@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cassert>
 #include <cmath>
 #include <vector>
@@ -143,7 +145,9 @@ class ConvMean {
   }
 
   int loop_count() { return c; }
-  double converge_failure_rate() { return double(converge_failure) / reset_count; }
+  double converge_failure_rate() {
+    return double(converge_failure) / reset_count;
+  }
 
   void reset() {
     reset_count++;
@@ -162,7 +166,7 @@ class ConvMean {
 
     window[first] = v;
     c++;
-    if (c >= limit){
+    if (c >= limit) {
       converge_failure++;
       return true;
     }

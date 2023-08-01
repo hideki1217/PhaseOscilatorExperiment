@@ -16,9 +16,11 @@
 #include <sstream>
 #include <vector>
 
-#include "phase.hpp"
-#include "phase.param.hpp"
-#include "utils.hpp"
+#include <phase.hpp>
+#include <utils.hpp>
+#include <mcmc.hpp>
+
+#include <phase.param.hpp>
 
 template <typename Energy>
 class SymBolzmanMP {
@@ -117,26 +119,6 @@ class SymBolzmanMP {
   int num_update = 0;
 };
 
-class Swapper {
- public:
-  Swapper(Rng &rng) : rng(rng), prob(std::uniform_real_distribution<>(0, 1)) {}
-
-  template <typename H>
-  bool try_swap(SymBolzmanMP<H> &lhs, SymBolzmanMP<H> &rhs) {
-    assert(lhs.dim == rhs.dim);
-
-    auto r = std::exp((lhs.beta() - rhs.beta()) * (lhs.E() - rhs.E()));
-    if (r >= 1 || r >= prob(rng)) {
-      lhs.swap(rhs);
-      return true;
-    }
-    return false;
-  }
-
- private:
-  Rng &rng;
-  std::uniform_real_distribution<> prob;
-};
 
 template <typename Score>
 class Energy {
@@ -289,14 +271,16 @@ void run(std::string &base) {
   ofs << base << std::endl;
 }
 
-int main() {
+int main(int argc, char** argv) {
+  assert(argc == 2);
+
   std::string base;
   {
     auto now = std::chrono::system_clock::now();
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
     const std::tm *lt = std::localtime(&stamp);
     std::stringstream ss;
-    ss << "./output/phase/" << std::put_time(lt, "%Y-%m-%d %H:%M:%S") << "/";
+    ss << argv[1] << "/output/" << std::put_time(lt, "%Y-%m-%d %H:%M:%S") << "/";
     base = ss.str();
     mkdir(base.c_str(), 0777);
   }

@@ -11,4 +11,4 @@ build/
 *.elf
 *.yaml
 
-*param.hpp
+*.param.*

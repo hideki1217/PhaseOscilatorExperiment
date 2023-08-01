@@ -3,8 +3,9 @@ import numpy as np
 from pathlib import Path
 import yaml
 from sklearn.cluster import KMeans
+import sys
 
-cwd = Path(__file__).absolute().parent
+cwd = Path(sys.argv[1])
 with open(cwd / "phase.out") as f:
     data = Path(f.readline().strip())
 with open(data / "phase_param.yaml") as f:
@@ -13,9 +14,9 @@ with open(data / "phase_param.yaml") as f:
 # 交換の図
 x = np.loadtxt(data / "phase_swap.csv", delimiter=",")
 index = list(range(x.shape[0]))
-plt.plot(index, np.where(x==0)[1], label=f"{0}")
-plt.plot(index, np.where(x==x.shape[1]//2)[1], label=f"{x.shape[1]//2}")
-plt.plot(index, np.where(x==x.shape[1]-1)[1], label=f"{x.shape[1]-1}")
+plt.plot(index, np.where(x == 0)[1], label=f"{0}")
+plt.plot(index, np.where(x == x.shape[1]//2)[1], label=f"{x.shape[1]//2}")
+plt.plot(index, np.where(x == x.shape[1]-1)[1], label=f"{x.shape[1]-1}")
 plt.legend()
 plt.tight_layout()
 plt.savefig(data / "phase_swap.png")

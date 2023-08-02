@@ -25,7 +25,11 @@
 class BolzmanMP {
  public:
   using State = std::vector<double>;
+#if defined(NEWTON)
+  using Score = PhaseNewton;
+#else
   using Score = ConvMean<S>;
+#endif
   const int dim;
 
   class Energy {
@@ -156,18 +160,6 @@ class BolzmanMP {
 };
 
 
-std::vector<double> symmetric(const std::vector<double> &left) {
-  // assume (i<j -> left[i] < left[j] && left[i] > 0)
-
-  std::vector<double> out;
-
-  for (int i = left.size() - 1; i >= 0; i--) out.push_back(-left[i]);
-  out.push_back(0);
-  for (int i = 0; i < left.size(); i++) out.push_back(left[i]);
-
-  return out;
-}
-
 template <typename Rng>
 std::vector<double> phase_unif(int n, Rng &rng) {
   std::uniform_real_distribution<> unif(0, 2 * Pi);
@@ -184,11 +176,14 @@ void run(std::string &base) {
   for (int i = 0; i < R; i++) rngs.push_back(Rng(rng()));
 
   // 位相振動子
-  auto w0 = symmetric(w_left);
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
+#if defined(NEWTON)
+  auto dynamics = std::vector(R, PhaseNewton(w0, s0, 1e-7));
+#else
   auto dynamics = std::vector(R, ConvMean<S>(PhaseRK4(w0, s0), converge_window,
                                              converge_eps, converge_limit));
+#endif
 
   std::vector<BolzmanMP> reprica;
   {
@@ -270,10 +265,13 @@ void run(std::string &base) {
     auto row = csv.new_row();
     for (auto r : reprica) row.content(r.accept_rate());
   }
+#if defined(NEWTON)
+#else
   {
     auto row = csv.new_row();
     for (auto r : reprica) row.content(r.H.score.converge_failure_rate());
   }
+#endif
   csv.close();
 
   std::ofstream ofs("./phase.out");

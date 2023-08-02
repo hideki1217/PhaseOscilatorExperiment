@@ -1,15 +1,105 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <math.hpp>
 #include <vector>
+
+static double _phase_order(int dim, const double *s) {
+  auto x = 0.0;
+  auto y = 0.0;
+  for (int i = 0; i < dim; i++) {
+    x += std::cos(s[i]);
+    y += std::sin(s[i]);
+  }
+  x /= dim;
+  y /= dim;
+  return std::sqrt(x * x + y * y);
+}
+
+static double _freq_order(int dim, const double *w, double eps = 0.1) {
+  auto c = 0;
+  for (int i = 0; i < dim; i++) {
+    c += (std::abs(w[i]) < eps);
+  }
+  return double(c) / dim;
+}
+
+static void F(int dim, const double *s, const double *w0, const double *K,
+              double *res) {
+  for (int i = 0; i < dim; i++) res[i] = w0[i];
+
+  for (int j = 0; j < dim; j++) {
+    auto s_j = s[j];
+    auto K_j = &K[j * dim];
+    for (int i = 0; i < dim; i++) {
+      res[i] -= K_j[i] * std::sin(s[i] - s_j);
+    }
+  }
+}
+
+static void DF(int n, const double *s, const double *w0, const double *K,
+               double *res) {
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      res[i * n + j] = (i != j) ? K[i * n + j] * std::cos(s[j] - s[i]) : 0;
+    }
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int k = 0; k < n; k++) {
+      res[i * n + i] -= K[i * n + k] * std::cos(s[k] - s[i]);
+    }
+  }
+
+  // make it reguler
+  for (int i = 0; i < n; i++) {
+    res[i * n + i] += 1e-12;
+  }
+}
+
+class PhaseNewton {
+ public:
+  const int dim;
+  const int maxitr;
+  const double eps;
+  // const Score score;
+
+  PhaseNewton(const std::vector<double> &w0, const std::vector<double> &s0,
+              double eps, int maxitr = 50)
+      : w0(w0), s(s0), maxitr(maxitr), eps(eps), dim(w0.size()) {}
+
+  void set_state(const std::vector<double> &s) { this->s = s; }
+
+  void step(const std::vector<double> &K) {
+    std::fill(s.begin(), s.end(), 0);
+    auto f = [&](int dim, const double *x, double *res) {
+      return F(dim, x, &w0[0], &K[0], res);
+    };
+    auto Df = [&](int dim, const double *x, double *res) {
+      return DF(dim, x, &w0[0], &K[0], res);
+    };
+    auto iter = newton_symmetric(dim, f, Df, &s[0], eps, maxitr);
+  }
+
+  double operator()(const std::vector<double> &K) {
+    step(K);
+    return _phase_order(dim, &s[0]);  // TODO: Hardcode
+  }
+
+ private:
+  std::vector<double> w0;
+  std::vector<double> s;
+};
 
 class PhaseRK4 {
  public:
   const int dim;
   const double dt;
 
-  PhaseRK4(std::vector<double> &w0, std::vector<double> &s0, double dt = 0.01)
+  PhaseRK4(const std::vector<double> &w0, const std::vector<double> &s0,
+           double dt = 0.01)
       : dim(w0.size()), w0(w0), s(s0), dt(dt) {
     assert(w0.size() == s0.size());
 
@@ -20,9 +110,7 @@ class PhaseRK4 {
     _s.resize(dim);
   }
 
-  void set_state(const std::vector<double> &s) {
-    this->s = s;
-  }
+  void set_state(const std::vector<double> &s) { this->s = s; }
 
   void step(const std::vector<double> &K) {
     assert(K.size() == dim * dim);
@@ -30,54 +118,21 @@ class PhaseRK4 {
     const auto dt2 = dt / 2;
     const auto dt6 = dt / 6;
     // 四次のルンゲクッタ法
-    velocity(dim, K.data(), w0.data(), s.data(), w.data());
+    F(dim, s.data(), w0.data(), K.data(), w.data());
     for (int i = 0; i < dim; i++) _s[i] = s[i] + w[i] * dt2;
-    velocity(dim, K.data(), w0.data(), _s.data(), k1.data());
+    F(dim, _s.data(), w0.data(), K.data(), k1.data());
     for (int i = 0; i < dim; i++) _s[i] = s[i] + k1[i] * dt2;
-    velocity(dim, K.data(), w0.data(), _s.data(), k2.data());
+    F(dim, _s.data(), w0.data(), K.data(), k2.data());
     for (int i = 0; i < dim; i++) _s[i] = s[i] + k2[i] * dt;
-    velocity(dim, K.data(), w0.data(), _s.data(), k3.data());
+    F(dim, _s.data(), w0.data(), K.data(), k3.data());
     for (int i = 0; i < dim; i++) k3[i] += w[i] + 2 * k1[i] + 2 * k2[i];
     for (int i = 0; i < dim; i++) s[i] += k3[i] * dt6;
   }
 
-  double phase_order() const {
-    auto x = 0.0;
-    auto y = 0.0;
-    for (int i = 0; i < dim; i++) {
-      x += std::cos(s[i]);
-      y += std::sin(s[i]);
-    }
-    x /= dim;
-    y /= dim;
-    return std::sqrt(x * x + y * y);
-  }
-
-  double freq_order(double eps = 0.1) const {
-    auto c = 0;
-    for (int i = 0; i < dim; i++) {
-      c += (std::abs(w[i]) < eps);
-    }
-    return double(c) / dim;
-  }
+  double phase_order() const { return _phase_order(dim, &s[0]); }
+  double freq_order(double eps = 0.1) const { return _freq_order(dim, &w[0]); }
 
  private:
-  void velocity(int dim, const double *K, const double *w0, const double *s,
-                double *w) {
-    // assume: K is symmetric
-    assert(std::abs(K[1] - K[dim]) < 1e-8);
-
-    for (int i = 0; i < dim; i++) w[i] = w0[i];
-
-    for (int j = 0; j < dim; j++) {
-      auto s_j = s[j];
-      auto K_j = &K[j * dim];
-      for (int i = 0; i < dim; i++) {
-        w[i] -= K_j[i] * std::sin(s[i] - s_j);
-      }
-    }
-  }
-
   std::vector<double> w0;
   std::vector<double> s;
 

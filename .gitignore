@@ -10,5 +10,6 @@ build/
 *.out
 *.elf
 *.yaml
+*.gif
 
 *.param.*

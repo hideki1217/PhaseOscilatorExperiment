@@ -22,17 +22,45 @@
 
 #include <phase.param.hpp>
 
-template <typename Energy>
-class SymBolzmanMP {
+class BolzmanMP {
  public:
   using State = std::vector<double>;
+  using Score = ConvMean<S>;
   const int dim;
-  Energy H;
 
-  SymBolzmanMP(int dim, Energy energy, double beta, Rng &rng,
-               double step_size = 1.0)
+  class Energy {
+   public:
+    const int dim;
+    const double threshold;
+    Score &score;
+
+    Energy(int dim, double threshold, Score &score)
+        : dim(dim), threshold(threshold), score(score) {}
+
+    double operator()(const std::vector<double> &K) const {
+      const double inf = 1e10;
+      return check_constraint(K) ? unsafe_energy(K) : inf;
+    }
+
+    double unsafe_energy(const std::vector<double> &K) const {
+      double sum = 0;
+      for (auto k : K) sum += k;
+      return sum / dim;
+    }
+
+    bool check_constraint(const std::vector<double> &K) const {
+      for (auto k : K) {
+        if (k < 0) return false;
+      }
+      if (score(K) < threshold) return false;
+      return true;
+    }
+  } H;
+
+  BolzmanMP(int dim, Energy param, double beta, Rng &rng,
+            double step_size = 1.0)
       : dim(dim),
-        H(energy),
+        H(param),
         _beta(beta),
         _sq_dim(int(std::sqrt(dim))),
         rng(rng),
@@ -54,7 +82,6 @@ class SymBolzmanMP {
 
   void set_state(std::vector<double> &s_) {
     s = s_;
-    _E = H(s);
   }
   const std::vector<double> &state() const { return s; }
 
@@ -64,13 +91,14 @@ class SymBolzmanMP {
   }
   double accept_rate() { return double(num_accept) / num_update; }
 
-  void swap(SymBolzmanMP &rhs) {
+  void swap(BolzmanMP &rhs) {
     assert(dim == rhs.dim);
     rhs.s.swap(s);
-    std::swap(rhs._E, _E);
   }
 
-  double E() const { return _E; }
+  double E() const {
+    return H.unsafe_energy(s); 
+  }
   double beta() const { return _beta; }
 
   State &update() {
@@ -84,9 +112,18 @@ class SymBolzmanMP {
     s[idx] += delta;
     s[xdi] += delta;
 
-    auto E = H(s);
-    if (_E >= E || std::exp(_beta * (_E - E)) >= unifr(rng)) {
-      _E = E;
+    // depend on Energy function
+    // H(K) = (\forall i, j K_{ij} >=0 \land R(K) >= R^*) \frac{1}{N} \sum_{i, j = 0}^{N-1} K_{ij} ? \infty
+    // dH = H(K+dK) - H(K) = (both fulfilled) ? \frac{1}{N} \sum_{ij} dK_{ij} : \infty
+    bool accept = false;
+    if (s[idx] >= 0 && H.score(s) >= H.threshold) {
+      double dE = (delta * 2) / H.dim; // H(s_new) - H(s_old) 
+      if (dE <= 0 || std::exp(-_beta * dE) >= unifr(rng)) {
+        accept = true;
+      }
+    }
+
+    if (accept) {
       num_accept++;
     } else {
       s[idx] = mem;
@@ -110,7 +147,6 @@ class SymBolzmanMP {
   std::uniform_real_distribution<> unifr;
   std::normal_distribution<> norm;
 
-  double _E;
   double _beta;
   State s;
   int _sq_dim;
@@ -119,29 +155,6 @@ class SymBolzmanMP {
   int num_update = 0;
 };
 
-
-template <typename Score>
-class Energy {
- public:
-  const int dim;
-  const double threshold;
-  Score &score;
-  Energy(int dim, double threshold, Score &score)
-      : dim(dim), threshold(threshold), score(score) {}
-
-  double operator()(const std::vector<double> &K) {
-    const double inf = 1e10;
-    for (auto k : K) {
-      if (k < 0) return inf;
-    }
-
-    auto sum = 0.0;
-    for (auto k : K) sum += k;
-
-    auto res = score(K);
-    return (res > threshold) ? sum / dim : inf;
-  }
-};
 
 std::vector<double> symmetric(const std::vector<double> &left) {
   // assume (i<j -> left[i] < left[j] && left[i] > 0)
@@ -174,22 +187,19 @@ void run(std::string &base) {
   auto w0 = symmetric(w_left);
   const int D_model = w0.size();
   auto s0 = phase_unif(D_model, rng);
-  auto dynamics = std::vector(
-      R, ConvMean<S>(PhaseRK4(w0, s0), converge_window, converge_eps, converge_limit));
-  std::vector<Energy<ConvMean<S>>> H_list;
-  for (auto &p : dynamics) {
-    H_list.push_back(Energy(D_model, threshold, p));
-  }
+  auto dynamics = std::vector(R, ConvMean<S>(PhaseRK4(w0, s0), converge_window,
+                                             converge_eps, converge_limit));
 
-  std::vector<SymBolzmanMP<Energy<ConvMean<S>>>> reprica;
+  std::vector<BolzmanMP> reprica;
   {
     // 絶対同期する結合を初期値に
     std::vector<double> K0(D_model * D_model, 10);
     for (int i = 0; i < D_model; i++) K0[i * D_model + i] = 0;
 
     for (int i = 0; i < R; i++) {
-      auto m = SymBolzmanMP(D_model * D_model, H_list[i], betas[i], rngs[i],
-                            step_size[i]);
+      auto m = BolzmanMP(D_model * D_model,
+                         BolzmanMP::Energy(D_model, threshold, dynamics[i]),
+                         betas[i], rngs[i], step_size[i]);
       m.set_state(K0);
 
       reprica.push_back(std::move(m));
@@ -220,7 +230,6 @@ void run(std::string &base) {
     if (i % T_swap == 0) random_swap(false);
   }
 #endif
-  // TODO: ここまでの状態をセーブできると何かと便利
 
   Csv csv((base + "phase.csv").c_str());
   std::vector<int> swap_history(R * N_sample / T_swap);

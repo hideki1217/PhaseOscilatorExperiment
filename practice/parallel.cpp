@@ -202,24 +202,31 @@ int main() {
   CsvWriter writer(ofs, true);
 
   std::vector<int> history(R);
-  for(int i=0; i<R; i++)history[i] = i;
+  for (int i = 0; i < R; i++) history[i] = i;
   for (int i = 0; i < N; i++) {
-    for (auto &model : reprica) {
-      auto s = model.update(T);
+    for (int j = 0; j < T; j++) {
+      for (auto &model : reprica) {
+        auto s = model.update();
+        for (auto x : s) writer.content(x);
+      }
+      writer.newrow();
 
-      for (auto x : s) writer.content(x);
+      if (j < T - 1) {
+      std::cout << history[0];
+      for (int i = 1; i < R; i++) std::cout << "," << history[i];
+      std::cout << std::endl;
+      }
     }
-    writer.newrow();
 
     if (i % 10 == 0) {
       static int count = 0;
       auto idx = (count++) % (R - 1);
       if (swapper.try_swap(reprica[idx], reprica[idx + 1])) {
-        std::swap(history[idx], history[idx+1]);
+        std::swap(history[idx], history[idx + 1]);
       }
     }
     std::cout << history[0];
-    for(int i=1; i<R; i++) std::cout << "," << history[i];
+    for (int i = 1; i < R; i++) std::cout << "," << history[i];
     std::cout << std::endl;
   }
 }

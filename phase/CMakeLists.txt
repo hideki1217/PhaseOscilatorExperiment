@@ -7,11 +7,11 @@ project(phase CXX)
 set(CMAKE_CXX_COMPILER icpx)
 set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_FLAGS "-g3 -O0 -pg")
-set(CMAKE_CXX_FLAGS "-fast -DNDEBUG")
+set(CMAKE_CXX_FLAGS "-fast -DNDEBUG -qopenmp")
 
 add_executable(phase phase.cpp)
 target_include_directories(phase PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_options(phase PRIVATE -openmp)
+# target_compile_options(phase PRIVATE "-qopenmp")
 # (defined NEWTON) ? Newton : RK4 
 target_compile_definitions(phase PRIVATE NEWTON)
 

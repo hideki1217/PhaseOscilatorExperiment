@@ -25,6 +25,16 @@ add_custom_target(async_run
     DEPENDS phase
 )
 
+add_executable(phase_asym phase_asym.cpp)
+target_include_directories(phase_asym PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# (defined NEWTON) ? Newton : RK4 
+# target_compile_definitions(phase_asym PRIVATE NEWTON)
+
+add_custom_target(async_run_asym 
+    COMMAND nohup ${CMAKE_CURRENT_SOURCE_DIR}/run_asym.sh
+    DEPENDS phase_asym
+)
+
 add_executable(test_math tests/test_math.cpp)
 target_include_directories(test_math PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_test(NAME test_math

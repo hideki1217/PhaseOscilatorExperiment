@@ -14,6 +14,24 @@ class OscilatorNetwork:
         res[np.diag_indices_from(res)] = -np.sum(res, axis=1)
         return res
 
+    def solve_ivp(self, K, w0, sampling_times):
+        t0 = sampling_times.min()
+        t2 = sampling_times.max()
+
+        n = K.shape[0]
+        sol = integrate.solve_ivp(fun=self.f, t_span=(t0, t2), y0=np.zeros(
+            n), args=(K, w0), dense_output=True, max_step=1)
+        ss = sol.sol(sampling_times).T
+        return ss
+
+    def solve_rk4(self, K, w0, dt=0.01, T=100):
+        n = K.shape[0]
+        res = list(
+            take(int(T / dt), rk4(self.f, np.zeros(n), args=(K, w0), dt=dt)))
+        sampling_times = np.array([t for (t, x) in res])
+        samlping_states = np.stack([x for (t, x) in res])
+        return sampling_times, samlping_states
+
     def order_rk4(self, K, w0, burn_in=5000, T=500, N=10000):
         n = len(w0)
 
@@ -39,3 +57,26 @@ class OscilatorNetwork:
             x -= r
         R = np.sqrt(np.sum(np.sin(x))**2 + np.sum(np.cos(x))**2)/n
         return R
+
+
+def rk4(f, x0, dt=0.01, t0=0., args=None):
+    t = t0
+    x = np.array(x0)
+    if args is not None:
+        def F(t, x): return f(t, x, *args)
+    else:
+        F = f
+    while True:
+        k1 = dt * F(t, x)
+        k2 = dt * F(t+0.5 * dt, x + 0.5 * k1)
+        k3 = dt * F(t+0.5 * dt, x + 0.5 * k2)
+        k4 = dt * F(t + dt, x + k3)
+        x += (k1 + 2 * k2 + 2 * k3 + k4) / 6
+        t += dt
+
+        yield (t, x.copy())
+
+
+def take(n, itr):
+    for _ in range(n):
+        yield next(itr)

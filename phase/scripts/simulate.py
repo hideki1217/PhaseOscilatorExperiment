@@ -32,6 +32,11 @@ class OscilatorNetwork:
         samlping_states = np.stack([x for (t, x) in res])
         return sampling_times, samlping_states
 
+    def solve_rk4_iter(self, K, w0, dt=0.01):
+        n = K.shape[0]
+        for e, (t, s) in enumerate(rk4(self.f, np.zeros(n), args=(K, w0), dt=dt)):
+            yield e, t, s
+
     def order_rk4(self, K, w0, burn_in=5000, T=500, N=10000):
         n = len(w0)
 

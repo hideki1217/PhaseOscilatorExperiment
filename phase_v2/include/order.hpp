@@ -43,7 +43,6 @@ class OrderEvaluator {
    * And return the status flag
    */
   EvalStatus eval(const Real *K, const Real *w) {
-    recorder_init();
     std::fill(s.begin(), s.end(), 0);
     Real t = 0;
     int iteration = 0;
@@ -149,14 +148,6 @@ class OrderEvaluator {
     sin_q_old.push_back(new_pop);
     sin_sum_new += mean - new_pop;
     sin_sum_old += new_pop - old_pop;
-  }
-
-  void recorder_init() {
-    std::fill(cos_q_new.begin(), cos_q_new.end(), 0);
-    std::fill(cos_q_old.begin(), cos_q_old.end(), 0);
-    std::fill(sin_q_new.begin(), sin_q_new.end(), 0);
-    std::fill(sin_q_old.begin(), sin_q_old.end(), 0);
-    cos_sum_new = cos_sum_old = sin_sum_new = sin_sum_old = 0;
   }
 
   std::vector<Real> s;

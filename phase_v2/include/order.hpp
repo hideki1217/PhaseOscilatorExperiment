@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <collection.hpp>
 #include <deque>
 #include <vector>
 
@@ -104,10 +105,10 @@ class OrderEvaluator {
   }
 
   bool recorder_check() {
-    const auto cos_mean_new = cos_sum_new / window;
-    const auto cos_mean_old = cos_sum_old / window;
-    const auto sin_mean_new = sin_sum_new / window;
-    const auto sin_mean_old = sin_sum_old / window;
+    const auto cos_mean_new = cos_q_new.sum() / window;
+    const auto cos_mean_old = cos_q_old.sum() / window;
+    const auto sin_mean_new = sin_q_new.sum() / window;
+    const auto sin_mean_old = sin_q_old.sum() / window;
 
     const auto R_new = _R =
         std::sqrt(cos_mean_new * cos_mean_new + sin_mean_new * sin_mean_new);
@@ -117,37 +118,19 @@ class OrderEvaluator {
   }
 
   void recorder_regist(const Real *s) {
-    Real mean, new_pop, old_pop;
-
-    mean = 0;
+    Real cos_mean = 0;
     for (int i = 0; i < ndim; i++) {
-      mean += std::cos(s[i]);
+      cos_mean += std::cos(s[i]);
     }
-    mean /= ndim;
+    cos_mean /= ndim;
+    cos_q_old.push(cos_q_new.push(cos_mean));
 
-    new_pop = cos_q_new.front();
-    old_pop = cos_q_old.front();
-    cos_q_new.pop_front();
-    cos_q_old.pop_front();
-    cos_q_new.push_back(mean);
-    cos_q_old.push_back(new_pop);
-    cos_sum_new += mean - new_pop;
-    cos_sum_old += new_pop - old_pop;
-
-    mean = 0;
+    Real sin_mean = 0;
     for (int i = 0; i < ndim; i++) {
-      mean += std::sin(s[i]);
+      sin_mean += std::sin(s[i]);
     }
-    mean /= ndim;
-
-    new_pop = sin_q_new.front();
-    old_pop = sin_q_old.front();
-    sin_q_new.pop_front();
-    sin_q_old.pop_front();
-    sin_q_new.push_back(mean);
-    sin_q_old.push_back(new_pop);
-    sin_sum_new += mean - new_pop;
-    sin_sum_old += new_pop - old_pop;
+    sin_mean /= ndim;
+    sin_q_old.push(sin_q_new.push(sin_mean));
   }
 
   std::vector<Real> s;
@@ -155,10 +138,8 @@ class OrderEvaluator {
   std::vector<Real> k1, k2, k3, k4;
 
   Real _R = -1;
-  std::deque<Real> cos_q_new, cos_q_old;
-  std::deque<Real> sin_q_new, sin_q_old;
-  Real cos_sum_new = 0, sin_sum_new = 0;
-  Real cos_sum_old = 0, sin_sum_old = 0;
+  collection::FixedQueue<Real> cos_q_new, cos_q_old;
+  collection::FixedQueue<Real> sin_q_new, sin_q_old;
 };
 
 }  // namespace order

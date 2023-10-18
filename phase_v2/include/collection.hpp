@@ -6,7 +6,13 @@ namespace collection {
 template <typename T>
 class FixedQueue {
  public:
+  FixedQueue() {}
   FixedQueue(size_t size, T initial) : _sum(initial * size) {
+    _inner.resize(size, initial);
+  }
+
+  void resize(size_t size, T initial = 0) {
+    _sum = size * initial;
     _inner.resize(size, initial);
   }
 
@@ -20,7 +26,7 @@ class FixedQueue {
   }
 
   T sum() { return _sum; }
-  T size() { return _inner.size(); }
+  size_t size() { return _inner.size(); }
 
  private:
   std::vector<T> _inner;

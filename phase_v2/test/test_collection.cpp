@@ -15,6 +15,9 @@ void test_FixedQueue {
   assert(q.sum() == 6);
   assert(q.push(4) == 1);
   assert(q.sum() == 9);
+
+  q.resize(4);
+  assert(q.sum() == 0);
 }
 
 int main() { test_FixedQueue(); }

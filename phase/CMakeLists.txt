@@ -11,9 +11,8 @@ set(CMAKE_CXX_FLAGS "-fast -DNDEBUG -qopenmp")
 
 add_executable(phase phase.cpp)
 target_include_directories(phase PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# target_compile_options(phase PRIVATE "-qopenmp")
 # (defined NEWTON) ? Newton : RK4 
-target_compile_definitions(phase PRIVATE NEWTON)
+# target_compile_definitions(phase PRIVATE NEWTON)
 
 add_custom_target(run 
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run.sh

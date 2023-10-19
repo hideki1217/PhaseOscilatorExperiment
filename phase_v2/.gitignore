@@ -1,6 +1,9 @@
 venv/
 
+pybind11/
+
 *.log
 *.png
 *.mp4
 *.csv
+**/*.so

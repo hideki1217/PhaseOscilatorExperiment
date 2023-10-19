@@ -2,7 +2,7 @@
 
 ## supported
 
-- [ ] Fast phase order calculator with convergence check.
+- [x] Fast phase order calculator with convergence check.
 - [ ] etc...
 
 # Setup for User

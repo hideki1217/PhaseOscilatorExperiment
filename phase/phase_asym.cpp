@@ -12,15 +12,13 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mcmc.hpp>
+#include <phase.hpp>
+#include <phase.param.hpp>
 #include <random>
 #include <sstream>
-#include <vector>
-
-#include <phase.hpp>
 #include <utils.hpp>
-#include <mcmc.hpp>
-
-#include <phase.param.hpp>
+#include <vector>
 
 class BolzmanMP {
  public:
@@ -68,25 +66,23 @@ class BolzmanMP {
         _beta(beta),
         _sq_dim(int(std::sqrt(dim))),
         rng(rng),
-        unif(std::uniform_int_distribution<>(
-            0, (dim - int(std::sqrt(dim))) / 2 - 1)),
         unifr(std::uniform_real_distribution<>(0, 1)),
         norm(std::normal_distribution<>(0, step_size)) {
     assert(beta > 0);
     State s_(dim, 0);
     set_state(s_);
 
-    // 対角成分のインデックスだけのテーブル
     for (int i = 0; i < _sq_dim; i++) {
-      for (int j = i + 1; j < _sq_dim; j++) {
+      for (int j = 0; j < _sq_dim; j++) {
+        if (i == j) continue;
+
         idx_table.push_back(i * _sq_dim + j);
       }
     }
+    unif = std::uniform_int_distribution<>(0, idx_table.size() - 1);
   }
 
-  void set_state(std::vector<double> &s_) {
-    s = s_;
-  }
+  void set_state(std::vector<double> &s_) { s = s_; }
   const std::vector<double> &state() const { return s; }
 
   void reset_statistics() {
@@ -100,28 +96,27 @@ class BolzmanMP {
     rhs.s.swap(s);
   }
 
-  double E() const {
-    return H.unsafe_energy(s); 
-  }
+  double E() const { return H.unsafe_energy(s); }
   double beta() const { return _beta; }
 
   State &update() {
     num_update++;
 
     auto idx = idx_table[unif(rng)];
-    auto xdi = _sq_dim * (idx % _sq_dim) + (idx / _sq_dim);
+    // auto xdi = _sq_dim * (idx % _sq_dim) + (idx / _sq_dim);
 
     auto mem = s[idx];
     auto delta = norm(rng);
     s[idx] += delta;
-    s[xdi] += delta;
+    // s[xdi] += delta;
 
     // depend on Energy function
-    // H(K) = (\forall i, j K_{ij} >=0 \land R(K) >= R^*) \frac{1}{N} \sum_{i, j = 0}^{N-1} K_{ij} ? \infty
-    // dH = H(K+dK) - H(K) = (both fulfilled) ? \frac{1}{N} \sum_{ij} dK_{ij} : \infty
+    // H(K) = (\forall i, j K_{ij} >=0 \land R(K) >= R^*) \frac{1}{N} \sum_{i, j
+    // = 0}^{N-1} K_{ij} ? \infty dH = H(K+dK) - H(K) = (both fulfilled) ?
+    // \frac{1}{N} \sum_{ij} dK_{ij} : \infty
     bool accept = false;
     if (s[idx] >= 0 && H.score(s) >= H.threshold) {
-      double dE = (delta * 2) / H.dim; // H(s_new) - H(s_old) 
+      double dE = delta / H.dim;  // H(s_new) - H(s_old)
       if (dE <= 0 || std::exp(-_beta * dE) >= unifr(rng)) {
         accept = true;
       }
@@ -131,7 +126,7 @@ class BolzmanMP {
       num_accept++;
     } else {
       s[idx] = mem;
-      s[xdi] = mem;
+      //   s[xdi] = mem;
     }
 
     return s;
@@ -158,7 +153,6 @@ class BolzmanMP {
   int num_accept = 0;
   int num_update = 0;
 };
-
 
 template <typename Rng>
 std::vector<double> phase_unif(int n, Rng &rng) {
@@ -278,7 +272,7 @@ void run(std::string &base) {
   ofs << base << std::endl;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   assert(argc == 2);
 
   std::string base;
@@ -287,7 +281,8 @@ int main(int argc, char** argv) {
     std::time_t stamp = std::chrono::system_clock::to_time_t(now);
     const std::tm *lt = std::localtime(&stamp);
     std::stringstream ss;
-    ss << argv[1] << "/output/" << std::put_time(lt, "%Y-%m-%d %H:%M:%S") << "/";
+    ss << argv[1] << "/output/asym/" << std::put_time(lt, "%Y-%m-%d %H:%M:%S")
+       << "/";
     base = ss.str();
     mkdir(base.c_str(), 0777);
   }

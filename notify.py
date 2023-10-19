@@ -31,7 +31,7 @@ if __name__ == "__main__":
     assert len(sys.argv) == 2
     path = Path(sys.argv[1])
 
-    with open(path / "result.log") as f:
+    with open(path) as f:
         content = '\n'.join(f.readlines())
         email_me(
         '[phase] Notification of end of execution',

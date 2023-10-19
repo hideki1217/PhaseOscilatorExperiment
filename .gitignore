@@ -11,5 +11,6 @@ build/
 *.elf
 *.yaml
 *.gif
+*.mp4
 
 *.param.*

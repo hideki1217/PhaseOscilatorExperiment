@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 import opy
 
@@ -25,5 +26,5 @@ R_list = [f(K, w) for K in K_list]
 
 plt.plot(K_list, R_list)
 plt.tight_layout()
-plt.savefig("./sample.png")
+plt.savefig(Path(__file__).parent / "output" / "eval_sample.png")
 plt.close()

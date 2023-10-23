@@ -8,6 +8,57 @@
 namespace lib {
 namespace order {
 
+template <typename Real>
+class AverageOrder {
+ private:
+  struct InnerUnit {
+    Real cos;
+    Real sin;
+
+    InnerUnit(Real cos, Real sin) : cos(cos), sin(sin) {}
+  };
+
+ public:
+  const int ndim;
+  AverageOrder(int window, int ndim)
+      : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
+
+  InnerUnit push(const Real *s) {
+    Real cos_mean = 0;
+    for (int i = 0; i < ndim; i++) {
+      cos_mean += std::cos(s[i]);
+    }
+    cos_mean /= ndim;
+    auto cos_pop = cos_q.push(cos_mean);
+
+    Real sin_mean = 0;
+    for (int i = 0; i < ndim; i++) {
+      sin_mean += std::sin(s[i]);
+    }
+    sin_mean /= ndim;
+    auto sin_pop = sin_q.push(sin_mean);
+
+    return InnerUnit(cos_pop, sin_pop);
+  }
+
+  InnerUnit push(const InnerUnit inner) {
+    auto cos_pop = cos_q.push(inner.cos);
+    auto sin_pop = sin_q.push(inner.sin);
+    return InnerUnit(cos_pop, sin_pop);
+  }
+
+  Real value() {
+    auto cos_mean = cos_q.mean();
+    auto sin_mean = sin_q.mean();
+    const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
+    return R_new;
+  }
+
+ private:
+  collection::FixedQueue<Real> cos_q;
+  collection::FixedQueue<Real> sin_q;
+};
+
 enum EvalStatus {
   Ok = 0,
   NotConverged = 1,
@@ -27,12 +78,9 @@ class OrderEvaluator {
         dt(dt),
         max_iteration(max_iteration),
         ndim(ndim),
+        avg_new(window, ndim),
+        avg_old(window, ndim),
         sim_engine(ndim, dt) {
-    cos_q_new.resize(window);
-    cos_q_old.resize(window);
-    sin_q_new.resize(window);
-    sin_q_old.resize(window);
-
     s.resize(ndim);
   }
 
@@ -71,37 +119,15 @@ class OrderEvaluator {
 
  private:
   bool recorder_check() {
-    const auto cos_mean_new = cos_q_new.sum() / window;
-    const auto cos_mean_old = cos_q_old.sum() / window;
-    const auto sin_mean_new = sin_q_new.sum() / window;
-    const auto sin_mean_old = sin_q_old.sum() / window;
-
-    const auto R_new = _R =
-        std::sqrt(cos_mean_new * cos_mean_new + sin_mean_new * sin_mean_new);
-    const auto R_old =
-        std::sqrt(cos_mean_old * cos_mean_old + sin_mean_old * sin_mean_old);
+    const auto R_new = _R = avg_new.value();
+    const auto R_old = avg_old.value();
     return std::abs(R_new - R_old) < epsilon;
   }
 
-  void recorder_regist(const Real *s) {
-    Real cos_mean = 0;
-    for (int i = 0; i < ndim; i++) {
-      cos_mean += std::cos(s[i]);
-    }
-    cos_mean /= ndim;
-    cos_q_old.push(cos_q_new.push(cos_mean));
-
-    Real sin_mean = 0;
-    for (int i = 0; i < ndim; i++) {
-      sin_mean += std::sin(s[i]);
-    }
-    sin_mean /= ndim;
-    sin_q_old.push(sin_q_new.push(sin_mean));
-  }
+  void recorder_regist(const Real *s) { avg_old.push(avg_new.push(s)); }
 
   Real _R = -1;
-  collection::FixedQueue<Real> cos_q_new, cos_q_old;
-  collection::FixedQueue<Real> sin_q_new, sin_q_old;
+  AverageOrder<Real> avg_new, avg_old;
 
   std::vector<Real> s;
   sim::RK4<Real> sim_engine;

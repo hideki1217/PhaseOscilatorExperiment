@@ -26,6 +26,7 @@ class FixedQueue {
   }
 
   T sum() { return _sum; }
+  T mean() { return _sum / size(); }
   size_t size() { return _inner.size(); }
 
  private:

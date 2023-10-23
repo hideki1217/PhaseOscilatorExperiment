@@ -2,6 +2,7 @@
 #include <cmath>
 #include <collection.hpp>
 #include <deque>
+#include <sim.hpp>
 #include <vector>
 
 namespace lib {
@@ -25,18 +26,14 @@ class OrderEvaluator {
         epsilon(epsilon),
         dt(dt),
         max_iteration(max_iteration),
-        ndim(ndim) {
+        ndim(ndim),
+        sim_engine(ndim, dt) {
     cos_q_new.resize(window);
     cos_q_old.resize(window);
     sin_q_new.resize(window);
     sin_q_old.resize(window);
 
     s.resize(ndim);
-    _s.resize(ndim);
-    k1.resize(ndim);
-    k2.resize(ndim);
-    k3.resize(ndim);
-    k4.resize(ndim);
   }
 
   /**
@@ -49,7 +46,7 @@ class OrderEvaluator {
     int iteration = 0;
 
     for (int i = 0; i < window * 2; i++) {
-      t = advance_dt(t, &s[0], K, w);
+      t = sim_engine.advance_dt(t, &s[0], K, w);
       recorder_regist(&s[0]);
     }
     iteration += window * 2;
@@ -60,7 +57,7 @@ class OrderEvaluator {
       }
 
       iteration++;
-      t = advance_dt(t, &s[0], K, w);
+      t = sim_engine.advance_dt(t, &s[0], K, w);
       recorder_regist(&s[0]);
     }
 
@@ -73,37 +70,6 @@ class OrderEvaluator {
   Real result() { return _R; }
 
  private:
-  Real advance_dt(Real t, Real *s, const Real *K, const Real *w) {
-    const Real dt_2 = dt * 0.5;
-    const Real dt_6 = dt / 6;
-
-    time_diff(K, w, t, &s[0], &k1[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt_2 * k1[i];
-    time_diff(K, w, t + dt_2, &_s[0], &k2[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt_2 * k2[i];
-    time_diff(K, w, t + dt_2, &_s[0], &k3[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt * k3[i];
-    time_diff(K, w, t + dt, &_s[0], &k4[0]);
-    for (int i = 0; i < ndim; i++) {
-      s[i] += dt_6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
-    }
-
-    return t + dt;
-  }
-
-  void time_diff(const Real *K, const Real *w, const Real t, const Real *s,
-                 Real *ds_dt) {
-    for (int i = 0; i < ndim; i++) {
-      ds_dt[i] = w[i];
-    }
-
-    for (int i = 0; i < ndim; i++) {
-      for (int j = 0; j < ndim; j++) {
-        ds_dt[i] += K[i * ndim + j] * std::sin(s[j] - s[i]);
-      }
-    }
-  }
-
   bool recorder_check() {
     const auto cos_mean_new = cos_q_new.sum() / window;
     const auto cos_mean_old = cos_q_old.sum() / window;
@@ -133,13 +99,12 @@ class OrderEvaluator {
     sin_q_old.push(sin_q_new.push(sin_mean));
   }
 
-  std::vector<Real> s;
-  std::vector<Real> _s;
-  std::vector<Real> k1, k2, k3, k4;
-
   Real _R = -1;
   collection::FixedQueue<Real> cos_q_new, cos_q_old;
   collection::FixedQueue<Real> sin_q_new, sin_q_old;
+
+  std::vector<Real> s;
+  sim::RK4<Real> sim_engine;
 };
 
 }  // namespace order

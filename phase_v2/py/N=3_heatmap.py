@@ -46,7 +46,7 @@ def main():
     plt.close()
 
     for K2 in [0, 0.1, 0.5, 1.0, 2.0]:
-        R_map = np.array([[f(K1, 0.1, K3, w)for K1 in np.linspace(0, 2, 100)]
+        R_map = np.array([[f(K1, K2, K3, w)for K1 in np.linspace(0, 2, 100)]
                           for K3 in np.linspace(0, 2, 100)])
         fig, ax = plt.subplots(figsize=(4.8, 4.8))
         ax.imshow(R_map, vmin=0, vmax=1)

@@ -47,27 +47,29 @@ def main():
     plt.savefig(data / "K_window.png")
     plt.close()
 
-    sampling_dts = np.power(10, np.linspace(-2, -1, 100))
-    for K in K_list:
-        R = theoritical_2d(K, w)
-        plt.plot(sampling_dts, [f(window=window, epsilon=epsilon,
-                 sampling_dt=sampling_dt, K=K, w=w) - R for sampling_dt in sampling_dts], label=f"K = {K:.3f}")
-    plt.tight_layout()
-    plt.legend()
-    plt.xscale("log")
-    plt.savefig(data / "K_samplingdt.png")
-    plt.close()
+    for window in [30000, 50000]:
+        sampling_dts = np.power(10, np.linspace(-2, -0.5, 100))
+        for K in K_list:
+            R = theoritical_2d(K, w)
+            plt.plot(sampling_dts, [f(window=window, epsilon=epsilon,
+                                      sampling_dt=sampling_dt, K=K, w=w) - R for sampling_dt in sampling_dts], label=f"K = {K:.3f}")
+        plt.tight_layout()
+        plt.legend()
+        plt.xscale("log")
+        plt.savefig(data / f"K_samplingdt_window={window}.png")
+        plt.close()
 
-    epsilons = np.power(10, np.linspace(-6, -1, 100))
-    for K in K_list:
-        R = theoritical_2d(K, w)
-        plt.plot(epsilons, [f(window=window, epsilon=epsilon,
-                 sampling_dt=sampling_dt, K=K, w=w) - R for epsilon in epsilons], label=f"K = {K:.3f}")
-    plt.tight_layout()
-    plt.legend()
-    plt.xscale("log")
-    plt.savefig(data / "K_epsilon.png")
-    plt.close()
+    for window in [30000, 50000]:
+        epsilons = np.power(10, np.linspace(-6, -1, 100))
+        for K in K_list:
+            R = theoritical_2d(K, w)
+            plt.plot(epsilons, [f(window=window, epsilon=epsilon,
+                                  sampling_dt=sampling_dt, K=K, w=w) - R for epsilon in epsilons], label=f"K = {K:.3f}")
+        plt.tight_layout()
+        plt.legend()
+        plt.xscale("log")
+        plt.savefig(data / f"K_epsilon_window={window}.png")
+        plt.close()
 
 
 if __name__ == "__main__":

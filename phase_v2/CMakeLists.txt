@@ -17,6 +17,7 @@ endif()
 add_library(lib INTERFACE)
 target_include_directories(lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+
 add_executable(test_order ${CMAKE_CURRENT_SOURCE_DIR}/test/test_order.cpp)
 target_link_libraries(test_order PRIVATE lib)
 add_test(NAME test_order COMMAND $<TARGET_FILE:test_order>)
@@ -24,6 +25,11 @@ add_test(NAME test_order COMMAND $<TARGET_FILE:test_order>)
 add_executable(test_collection ${CMAKE_CURRENT_SOURCE_DIR}/test/test_order.cpp)
 target_link_libraries(test_collection PRIVATE lib)
 add_test(NAME test_collection COMMAND $<TARGET_FILE:test_collection>)
+
+add_executable(test_sim ${CMAKE_CURRENT_SOURCE_DIR}/test/test_sim.cpp)
+target_link_libraries(test_sim PRIVATE lib)
+add_test(NAME test_sim COMMAND $<TARGET_FILE:test_sim>)
+
 
 set(PYTHON_EXECUTABLE /${CMAKE_CURRENT_SOURCE_DIR}/venv/bin/python)
 add_subdirectory(pybind11)

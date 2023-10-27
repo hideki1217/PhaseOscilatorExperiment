@@ -14,18 +14,19 @@ class OrderEvaluator {
  public:
   const int window;
   const Real epsilon;
-  const Real dt;
+  const Real sampling_dt;
   const int max_iteration;
   const int ndim;
-  OrderEvaluator(int window, Real epsilon, Real dt, int max_iteration, int ndim)
+  OrderEvaluator(int window, Real epsilon, Real sampling_dt, int max_iteration,
+                 int ndim, Real _sim_dt = 1e-2)
       : window(window),
         epsilon(epsilon),
-        dt(dt),
+        sampling_dt(sampling_dt),
         max_iteration(max_iteration),
         ndim(ndim),
         avg_new(window, ndim),
         avg_old(window, ndim),
-        sim_engine(ndim, dt) {
+        sim_engine(ndim, _sim_dt) {
     s.resize(ndim);
   }
 
@@ -39,7 +40,8 @@ class OrderEvaluator {
     int iteration = 0;
 
     for (int i = 0; i < window * 2; i++) {
-      t = sim_engine.advance_dt(t, &s[0], K, w);
+      const auto result = sim_engine.advance(sampling_dt, t, &s[0], K, w);
+      t = result.t;
       recorder_regist(&s[0]);
     }
     iteration += window * 2;
@@ -50,7 +52,8 @@ class OrderEvaluator {
       }
 
       iteration++;
-      t = sim_engine.advance_dt(t, &s[0], K, w);
+      const auto result = sim_engine.advance(sampling_dt, t, &s[0], K, w);
+      t = result.t;
       recorder_regist(&s[0]);
     }
 

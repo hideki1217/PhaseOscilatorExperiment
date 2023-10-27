@@ -2,22 +2,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <opy.hpp>
+#include <tool.hpp>
 #include <vector>
-
-void _assert_eq(double actual, double respect, double acc,
-                const char* str_actual, const char* str_respect,
-                const char* file, const int line) {
-  if (std::abs(actual - respect) > acc) {
-    std::cerr << file << ":" << line << ": |" << str_actual << " - "
-              << str_respect << "| < " << acc << std::endl;
-    std::cerr << "    Actual  : " << actual << std::endl;
-    std::cerr << "    Respect : " << respect << std::endl;
-    std::exit(1);
-  }
-}
-
-#define assert_nearly_eq(actual, respect, acc) \
-  _assert_eq(actual, respect, acc, #actual, #respect, __FILE__, __LINE__)
 
 double _test_2d(lib::OrderEvaluator<double>& model_2d, double k, double w0) {
   std::vector<double> K = {0, k, k, 0};

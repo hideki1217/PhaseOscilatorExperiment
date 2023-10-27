@@ -28,7 +28,7 @@ PYBIND11_MODULE(opy, m) {
       .def("result", &OrderEvaluator<Real>::result)
       .def_readonly("window", &OrderEvaluator<Real>::window)
       .def_readonly("epsilon", &OrderEvaluator<Real>::epsilon)
-      .def_readonly("dt", &OrderEvaluator<Real>::dt)
+      .def_readonly("sampling_dt", &OrderEvaluator<Real>::sampling_dt)
       .def_readonly("max_iteration", &OrderEvaluator<Real>::max_iteration)
       .def_readonly("ndim", &OrderEvaluator<Real>::ndim);
   py::enum_<EvalStatus>(m, "EvalStatus")

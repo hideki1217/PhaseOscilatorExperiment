@@ -38,7 +38,11 @@ target_link_libraries(opy PRIVATE lib)
 pybind11_add_module(window_rate src/window_rate.cpp)
 target_link_libraries(window_rate PRIVATE lib)
 
-
-add_custom_command(TARGET opy window_rate POST_BUILD
+add_custom_target(copy_shared_object ALL
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/build/*.so ${CMAKE_CURRENT_SOURCE_DIR}/py/
+  DEPENDS opy window_rate
 )
+
+# add_custom_command(TARGET opy window_rate POST_BUILD
+#   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/build/*.so ${CMAKE_CURRENT_SOURCE_DIR}/py/
+# )

@@ -2,4 +2,4 @@ pybind11
 numpy
 matplotlib
 python-ternary
-PIL
+pillow

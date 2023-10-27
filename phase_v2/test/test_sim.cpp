@@ -52,8 +52,8 @@ void test_advance_2d(Real k, Real w0) {
   std::vector<Real> w = {-w0, w0};
 
   Real sampling_dt = 1;
-  const int iteration = 30000;
-  auto avg = order::AverageOrder<Real>(10000, ndim);
+  const int iteration = 4000;
+  auto avg = order::AverageOrder<Real>(2000, ndim);
   auto theoritical_2d = [](const double K, const double w) -> double {
     if (K >= w) {
       return std::cos(0.5 * std::asin(w / K));

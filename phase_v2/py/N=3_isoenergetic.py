@@ -14,7 +14,7 @@ def main():
     ndim = 3
     w = np.array([-1, 0, 1.])
     model = opypy.OrderEvaluator(
-        window=30000, epsilon=1e-4, dt=0.01, max_iteration=100000, ndim=ndim)
+        window=30000, epsilon=1e-4, sampling_dt=0.01, max_iteration=100000, ndim=ndim)
 
     def f(K1, K2, K3, w):
         K_ = np.array([0, K1, K2,

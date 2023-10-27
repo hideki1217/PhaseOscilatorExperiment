@@ -3,9 +3,9 @@ import numpy as np
 
 
 class OrderEvaluator:
-    def __init__(self, window: int, epsilon: float, dt: float, max_iteration: int, ndim: int):
+    def __init__(self, window: int, epsilon: float, sampling_dt: float, max_iteration: int, ndim: int):
         self._ = opy.OrderEvaluator(
-            window, epsilon, dt, max_iteration, ndim)
+            window, epsilon, sampling_dt, max_iteration, ndim)
 
     def eval(self, K, w):
         status = self._.eval(np.array(K), np.array(w))

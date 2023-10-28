@@ -1,9 +1,9 @@
+# NOTE: https://qiita.com/JuvenileTalk9/items/e857b9a62b447cc725e3　を元にcv2を自前ビルド
+import cv2
+import opypy
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-from PIL import Image
-
-import opypy
 
 
 def main():
@@ -51,12 +51,21 @@ def main():
     for E in map(lambda x: x*0.01, range(301)):
         draw(E)
 
-    ims = [(float(f.stem[len("E="):]), Image.open(f))
-           for f in data.glob("E=*.png")]
-    ims.sort()
-    ims = [x[1] for x in ims]
-    ims[0].save(data / "isoenergetic.gif",
-                save_all=True, append_images=ims[1:], optimize=False, duration=60, loop=0)
+    imfs = sorted([(float(f.stem[len("E="):]), f)
+                  for f in data.glob("E=*.png")])
+    imgs = []
+    for E, f in imfs:
+        img = cv2.imread(str(f))
+        height, width, layers = img.shape
+        size = (width, height)
+        cv2.putText(img, f"E = {E:.2f}", (0, 50), cv2.FONT_HERSHEY_PLAIN,
+                    2, (0, 0, 0), 2, cv2.LINE_AA)
+        imgs.append(img)
+    video = cv2.VideoWriter(str(data / "summary.mp4"),
+                            cv2.VideoWriter_fourcc(*'avc1'), 30, size, True)
+    for img in imgs:
+        video.write(img)
+    video.release()
 
 
 if __name__ == "__main__":

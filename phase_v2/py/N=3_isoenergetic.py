@@ -56,7 +56,7 @@ def main():
     ims.sort()
     ims = [x[1] for x in ims]
     ims[0].save(data / "isoenergetic.gif",
-                save_all=True, append_images=ims[1:], optimize=False, duration=40, loop=0)
+                save_all=True, append_images=ims[1:], optimize=False, duration=60, loop=0)
 
 
 if __name__ == "__main__":

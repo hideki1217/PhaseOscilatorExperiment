@@ -33,15 +33,12 @@ def main():
 
     K_list = np.array([0.5, 0.99, 1.01, 2])
     w = 1.0
-    sampling_dt = 0.01
-    epsilon = 1e-4
-    window = 30000
 
-    windows = list(map(lambda T: int(T / sampling_dt), range(100, 1000, 1)))
+    windows = list(range(10000, 100000, 100))
     for K in K_list:
         R = theoritical_2d(K, w)
-        plt.plot(windows, [f(window=window, epsilon=epsilon,
-                 sampling_dt=sampling_dt, K=K, w=w) - R for window in windows], label=f"K = {K:.3f}")
+        plt.plot(windows, [f(window=window, K=K, w=w) -
+                 R for window in windows], label=f"K = {K:.3f}")
     plt.tight_layout()
     plt.legend()
     plt.savefig(data / "K_window.png")
@@ -51,8 +48,8 @@ def main():
         sampling_dts = np.power(10, np.linspace(-2, -0.5, 100))
         for K in K_list:
             R = theoritical_2d(K, w)
-            plt.plot(sampling_dts, [f(window=window, epsilon=epsilon,
-                                      sampling_dt=sampling_dt, K=K, w=w) - R for sampling_dt in sampling_dts], label=f"K = {K:.3f}")
+            plt.plot(sampling_dts, [f(window=window, sampling_dt=sampling_dt, K=K,
+                     w=w) - R for sampling_dt in sampling_dts], label=f"K = {K:.3f}")
         plt.tight_layout()
         plt.legend()
         plt.xscale("log")
@@ -63,8 +60,8 @@ def main():
         epsilons = np.power(10, np.linspace(-6, -1, 100))
         for K in K_list:
             R = theoritical_2d(K, w)
-            plt.plot(epsilons, [f(window=window, epsilon=epsilon,
-                                  sampling_dt=sampling_dt, K=K, w=w) - R for epsilon in epsilons], label=f"K = {K:.3f}")
+            plt.plot(epsilons, [f(window=window, epsilon=epsilon, K=K,
+                     w=w) - R for epsilon in epsilons], label=f"K = {K:.3f}")
         plt.tight_layout()
         plt.legend()
         plt.xscale("log")

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+from PIL import Image
 
 import opypy
 
@@ -47,8 +48,15 @@ def main():
         plt.savefig(data / f"E={E:.2f}.png")
         plt.close()
 
-    for E in map(lambda x: x*0.05, range(61)):
+    for E in map(lambda x: x*0.01, range(301)):
         draw(E)
+
+    ims = [(float(f.stem[len("E="):]), Image.open(f))
+           for f in data.glob("E=*.png")]
+    ims.sort()
+    ims = [x[1] for x in ims]
+    ims[0].save(data / "isoenergetic.gif",
+                save_all=True, append_images=ims[1:], optimize=False, duration=40, loop=0)
 
 
 if __name__ == "__main__":

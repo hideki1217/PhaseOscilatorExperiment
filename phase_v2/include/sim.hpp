@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_math.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -59,16 +60,15 @@ class RK4 {
     const Real dt_2 = dt * 0.5;
     const Real dt_6 = dt / 6;
 
-    target_model(ndim, K, w, t, &s[0], &k1[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt_2 * k1[i];
+    target_model(ndim, K, w, t, s, &k1[0]);
+    sumofp(ndim, &_s[0], s, dt_2, &k1[0]);
     target_model(ndim, K, w, t + dt_2, &_s[0], &k2[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt_2 * k2[i];
+    sumofp(ndim, &_s[0], s, dt_2, &k2[0]);
     target_model(ndim, K, w, t + dt_2, &_s[0], &k3[0]);
-    for (int i = 0; i < ndim; i++) _s[i] = s[i] + dt * k3[i];
+    sumofp(ndim, &_s[0], s, dt, &k3[0]);
     target_model(ndim, K, w, t + dt, &_s[0], &k4[0]);
-    for (int i = 0; i < ndim; i++) {
-      s[i] += dt_6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
-    }
+    sumofp(ndim, s, s, dt_6, &k1[0], dt_6 * 2, &k2[0], dt_6 * 2, &k3[0], dt_6,
+           &k4[0]);
 
     return t + dt;
   }
@@ -143,33 +143,26 @@ class FehlbergRK45 {
 
     target_model(ndim, K, w, t, s, k[0]);
 
-    for (int i = 0; i < ndim; i++) tmp[i] = s[i] + h * (a_0[0] * k[0][i]);
+    sumofp(ndim, &tmp[0], s, h * a_0[0], k[0]);
     target_model(ndim, K, w, t + c_0 * h, &tmp[0], k[1]);
 
-    for (int i = 0; i < ndim; i++)
-      tmp[i] = s[i] + h * (a_1[0] * k[0][i] + a_1[1] * k[1][i]);
+    sumofp(ndim, &tmp[0], s, h * a_1[0], k[0], h * a_1[1], k[1]);
     target_model(ndim, K, w, t + c_1 * h, &tmp[0], k[2]);
 
-    for (int i = 0; i < ndim; i++)
-      tmp[i] =
-          s[i] + h * (a_2[0] * k[0][i] + a_2[1] * k[1][i] + a_2[2] * k[2][i]);
+    sumofp(ndim, &tmp[0], s, h * a_2[0], k[0], h * a_2[1], k[1], h * a_2[2],
+           k[2]);
     target_model(ndim, K, w, t + c_2 * h, &tmp[0], k[3]);
 
-    for (int i = 0; i < ndim; i++)
-      tmp[i] = s[i] + h * (a_3[0] * k[0][i] + a_3[1] * k[1][i] +
-                           a_3[2] * k[2][i] + a_3[3] * k[3][i]);
+    sumofp(ndim, &tmp[0], s, h * a_3[0], k[0], h * a_3[1], k[1], h * a_3[2],
+           k[2], h * a_3[3], k[3]);
     target_model(ndim, K, w, t + c_3 * h, &tmp[0], k[4]);
 
-    for (int i = 0; i < ndim; i++)
-      tmp[i] =
-          s[i] + h * (a_4[0] * k[0][i] + a_4[1] * k[1][i] + a_4[2] * k[2][i] +
-                      a_4[3] * k[3][i] + a_4[4] * k[4][i]);
+    sumofp(ndim, &tmp[0], s, h * a_4[0], k[0], h * a_4[1], k[1], h * a_4[2],
+           k[2], h * a_4[3], k[3], h * a_4[4], k[4]);
     target_model(ndim, K, w, t + c_4 * h, &tmp[0], k[5]);
 
-    for (int i = 0; i < ndim; i++) {
-      tmp[i] = b[0] * k[0][i] + b[1] * k[1][i] + b[2] * k[2][i] +
-               b[3] * k[3][i] + b[4] * k[4][i];
-    }
+    sumofp(ndim, &tmp[0], b[0], k[0], b[1], k[2], b[2], k[3], b[3], k[4], b[4],
+           k[5]);
     const auto R = norm(ndim, &tmp[0]);
     const auto R_base = atol;
 
@@ -178,11 +171,8 @@ class FehlbergRK45 {
     // std::cout << "    R = " << R << " h =" << h << " t = " << t << std::endl;
     if (R < R_base) {
       t += (dt = h);
-      for (int i = 0; i < ndim; i++) {
-        // NOTE: this index is misaligned but intended.
-        s[i] += h * (d[0] * k[0][i] + d[1] * k[2][i] + d[2] * k[3][i] +
-                     d[3] * k[4][i]);
-      }
+      sumofp(ndim, s, s, h * d[0], k[0], h * d[1], k[2], h * d[2], k[3],
+             h * d[3], k[4]);
     }
 
     const auto delta = std::pow(atol / (2 * R), 0.25);

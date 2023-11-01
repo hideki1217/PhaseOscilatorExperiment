@@ -41,7 +41,7 @@ PYBIND11_MODULE(opy, m) {
            py::arg("max_dt"), py::arg("atol"))
       .def(
           "eval",
-          [](OrderEvaluatorRK4<Real>& model, py::array_t<Real> K,
+          [](OrderEvaluatorRK45<Real>& model, py::array_t<Real> K,
              py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());

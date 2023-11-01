@@ -86,12 +86,14 @@ class FehlbergRK45 {
 
  public:
   const Real atol;
-  const Real first_h, max_h;
+  const Real first_h, min_h, max_h;
   const int ndim;
-  FehlbergRK45(int ndim, Real first_h, Real max_h, Real atol = 1e-3)
+  FehlbergRK45(int ndim, Real first_h, Real max_h, Real atol = 1e-3,
+               Real min_h = 1e-6)
       : atol(atol),
         first_h(first_h),
         max_h(max_h),
+        min_h(min_h),
         ndim(ndim),
         tmp(ndim),
         _k(ndim * 6) {
@@ -106,7 +108,7 @@ class FehlbergRK45 {
     h = first_h;
 
     int iteration = 0;
-    while (t < t_max) {
+    while (t + min_h < t_max) {
       iteration++;
       const auto h = try_advance(t, s, K, w, t_max);
       if (h > 0) {

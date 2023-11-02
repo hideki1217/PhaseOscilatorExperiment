@@ -13,10 +13,10 @@ def main():
 
     ndim = 2
     w = np.array([-1, 1.])
-    model = opypy.OrderEvaluator(
-        window=30000, epsilon=1e-4, dt=0.01, max_iteration=100000, ndim=ndim)
+    model = opypy.OrderEvaluator.default(ndim)
 
     def f(K1, K2, w):
+        print(f"{K1}, {K2}")
         K_ = np.array([0, K1,
                        K2, 0])
 

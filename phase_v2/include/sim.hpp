@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <vector>
 
 namespace lib {
@@ -96,9 +97,12 @@ class FehlbergRK45 {
         max_h(max_h),
         ndim(ndim),
         tmp(ndim),
-        _k(ndim * 6) {
-    for (int i = 0; i < 6; i++) k[i] = &_k[i * ndim];
-  }
+        k0(ndim),
+        k1(ndim),
+        k2(ndim),
+        k3(ndim),
+        k4(ndim),
+        k5(ndim) {}
 
   /**
    * advance T time from (t, s) on the model.
@@ -125,8 +129,8 @@ class FehlbergRK45 {
     /**
      * reference: https://slpr.sakura.ne.jp/qp/runge-kutta-ex/#rkf45hauto
      */
-    assert(t < t_max);
     assert(h > 0);
+    assert(h <= t_max - t);
 
     static constexpr Real c_0 = 1. / 4, a_0[] = {1. / 4};
     static constexpr Real c_1 = 3. / 8, a_1[] = {3. / 32, 9. / 32};
@@ -141,29 +145,29 @@ class FehlbergRK45 {
     static constexpr Real d[] = {25. / 216, 1408. / 2565, 2197. / 4104,
                                  -1. / 5};
 
-    target_model(ndim, K, w, t, s, k[0]);
+    target_model(ndim, K, w, t, s, &k0[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_0[0], k[0]);
-    target_model(ndim, K, w, t + c_0 * h, &tmp[0], k[1]);
+    sumofp(ndim, &tmp[0], s, h * a_0[0], &k0[0]);
+    target_model(ndim, K, w, t + c_0 * h, &tmp[0], &k1[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_1[0], k[0], h * a_1[1], k[1]);
-    target_model(ndim, K, w, t + c_1 * h, &tmp[0], k[2]);
+    sumofp(ndim, &tmp[0], s, h * a_1[0], &k0[0], h * a_1[1], &k1[0]);
+    target_model(ndim, K, w, t + c_1 * h, &tmp[0], &k2[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_2[0], k[0], h * a_2[1], k[1], h * a_2[2],
-           k[2]);
-    target_model(ndim, K, w, t + c_2 * h, &tmp[0], k[3]);
+    sumofp(ndim, &tmp[0], s, h * a_2[0], &k0[0], h * a_2[1], &k1[0], h * a_2[2],
+           &k2[0]);
+    target_model(ndim, K, w, t + c_2 * h, &tmp[0], &k3[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_3[0], k[0], h * a_3[1], k[1], h * a_3[2],
-           k[2], h * a_3[3], k[3]);
-    target_model(ndim, K, w, t + c_3 * h, &tmp[0], k[4]);
+    sumofp(ndim, &tmp[0], s, h * a_3[0], &k0[0], h * a_3[1], &k1[0], h * a_3[2],
+           &k2[0], h * a_3[3], &k3[0]);
+    target_model(ndim, K, w, t + c_3 * h, &tmp[0], &k4[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_4[0], k[0], h * a_4[1], k[1], h * a_4[2],
-           k[2], h * a_4[3], k[3], h * a_4[4], k[4]);
-    target_model(ndim, K, w, t + c_4 * h, &tmp[0], k[5]);
+    sumofp(ndim, &tmp[0], s, h * a_4[0], &k0[0], h * a_4[1], &k1[0], h * a_4[2],
+           &k2[0], h * a_4[3], &k3[0], h * a_4[4], &k4[0]);
+    target_model(ndim, K, w, t + c_4 * h, &tmp[0], &k5[0]);
 
-    sumofp(ndim, &tmp[0], b[0], k[0], b[1], k[2], b[2], k[3], b[3], k[4], b[4],
-           k[5]);
-    const auto R = norm(ndim, &tmp[0]);
+    sumofp(ndim, &tmp[0], b[0], &k0[0], b[1], &k2[0], b[2], &k3[0], b[3],
+           &k4[0], b[4], &k5[0]);
+    const auto R = norm(ndim, &tmp[0]) + std::numeric_limits<Real>::epsilon();
     const auto R_base = atol;
 
     // Try to update state
@@ -171,16 +175,14 @@ class FehlbergRK45 {
     // std::cout << "    R = " << R << " h =" << h << " t = " << t << std::endl;
     if (R < R_base) {
       t += (dt = h);
-      sumofp(ndim, s, s, h * d[0], k[0], h * d[1], k[2], h * d[2], k[3],
-             h * d[3], k[4]);
+      sumofp(ndim, s, s, h * d[0], &k0[0], h * d[1], &k2[0], h * d[2], &k3[0],
+             h * d[3], &k4[0]);
     }
 
     const auto delta = std::pow(atol / (2 * R), 0.25);
     h *= (delta <= 0.1) ? 0.1 : (delta >= 4) ? 4 : delta;
     h = std::min(h, max_h);
-    if (t + h > t_max) {
-      h = t_max - t;
-    }
+    h = std::min(h, t_max - t);
 
     reliability = R;
     return dt;
@@ -188,8 +190,12 @@ class FehlbergRK45 {
   Real h;
   Real reliability;
   std::vector<Real> tmp;
-  std::vector<Real> _k;
-  Real *k[6];
+  std::vector<Real> k0;
+  std::vector<Real> k1;
+  std::vector<Real> k2;
+  std::vector<Real> k3;
+  std::vector<Real> k4;
+  std::vector<Real> k5;
 };
 }  // namespace sim
 }  // namespace lib

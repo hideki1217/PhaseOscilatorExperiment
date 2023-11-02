@@ -92,8 +92,8 @@ class FehlbergRK45 {
                Real min_h = 1e-6)
       : atol(atol),
         first_h(first_h),
-        max_h(max_h),
         min_h(min_h),
+        max_h(max_h),
         ndim(ndim),
         tmp(ndim),
         _k(ndim * 6) {

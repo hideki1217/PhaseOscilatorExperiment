@@ -19,6 +19,10 @@ class OrderEvaluator:
             self._ = opy.OrderEvaluatorRK45(
                 window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
 
+    @classmethod
+    def default(cls, ndim):
+        return OrderEvaluator(window=30000, epsilon=1e-4, sampling_dt=0.1, max_iteration=100000, ndim=ndim, method='rk45')
+
     def eval(self, K, w):
         status = self._.eval(np.array(K), np.array(w))
         return status

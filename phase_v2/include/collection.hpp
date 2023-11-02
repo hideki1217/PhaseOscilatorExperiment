@@ -7,11 +7,11 @@ template <typename T>
 class FixedQueue {
  public:
   FixedQueue() {}
-  FixedQueue(size_t size, T initial) : _sum(initial * size) {
+  FixedQueue(std::size_t size, T initial) : _sum(initial * size) {
     _inner.resize(size, initial);
   }
 
-  void resize(size_t size, T initial = 0) {
+  void resize(std::size_t size, T initial = 0) {
     _sum = size * initial;
     _inner.resize(size, initial);
   }
@@ -27,7 +27,7 @@ class FixedQueue {
 
   T sum() { return _sum; }
   T mean() { return _sum / size(); }
-  size_t size() { return _inner.size(); }
+  std::size_t size() { return _inner.size(); }
 
  private:
   std::vector<T> _inner;

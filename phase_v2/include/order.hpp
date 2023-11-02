@@ -5,21 +5,21 @@ namespace lib {
 namespace order {
 
 template <typename Real>
-class AverageOrder {
- private:
-  struct InnerUnit {
-    Real cos;
-    Real sin;
+struct InnerUnit {
+  Real cos;
+  Real sin;
 
-    InnerUnit(Real cos, Real sin) : cos(cos), sin(sin) {}
-  };
+  InnerUnit(Real cos, Real sin) : cos(cos), sin(sin) {}
+};
 
+template <typename Real>
+class FixedWindowOrder {
  public:
   const int ndim;
-  AverageOrder(int window, int ndim)
+  FixedWindowOrder(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
-  InnerUnit push(const Real *s) {
+  InnerUnit<Real> push(const Real *s) {
     Real cos_mean = 0;
     for (int i = 0; i < ndim; i++) {
       cos_mean += std::cos(s[i]);
@@ -37,7 +37,7 @@ class AverageOrder {
     return InnerUnit(cos_pop, sin_pop);
   }
 
-  InnerUnit push(const InnerUnit inner) {
+  InnerUnit<Real> push(const InnerUnit<Real> inner) {
     auto cos_pop = cos_q.push(inner.cos);
     auto sin_pop = sin_q.push(inner.sin);
     return InnerUnit(cos_pop, sin_pop);
@@ -54,6 +54,5 @@ class AverageOrder {
   collection::FixedQueue<Real> cos_q;
   collection::FixedQueue<Real> sin_q;
 };
-
 }  // namespace order
 }  // namespace lib

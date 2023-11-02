@@ -1,4 +1,4 @@
-
+#pragma once
 
 template <typename Real>
 void sumofp(int ndim, Real *out, Real v1, const Real *x1) {

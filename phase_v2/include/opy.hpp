@@ -75,7 +75,7 @@ class OrderEvaluatorBase {
   void recorder_regist(const Real *s) { avg_old.push(avg_new.push(s)); }
 
   Real _R = -1;
-  order::AverageOrder<Real> avg_new, avg_old;
+  order::FixedWindowOrder<Real> avg_new, avg_old;
 
   std::vector<Real> s;
   OdeInt sim_engine;

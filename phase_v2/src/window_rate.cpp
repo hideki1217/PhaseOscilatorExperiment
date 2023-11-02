@@ -38,7 +38,7 @@ class OrderChain {
   }
 
  private:
-  order::AverageOrder<Real> avg;
+  order::FixedWindowOrder<Real> avg;
 
   std::vector<Real> s;
   sim::RK4<Real> sim_engine;

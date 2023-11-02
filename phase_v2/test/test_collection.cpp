@@ -2,7 +2,7 @@
 #include <collection.hpp>
 #include <vector>
 
-void test_FixedQueue {
+void test_FixedQueue() {
   auto q = lib::collection::FixedQueue<int>(3, 0);
   assert(q.sum() == 0);
   assert(q.size() == 3);

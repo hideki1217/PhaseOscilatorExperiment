@@ -13,10 +13,10 @@ struct InnerUnit {
 };
 
 template <typename Real>
-class FixedWindowOrder {
+class KuramotoFixed {
  public:
   const int ndim;
-  FixedWindowOrder(int window, int ndim)
+  KuramotoFixed(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
   InnerUnit<Real> push(const Real *s) {

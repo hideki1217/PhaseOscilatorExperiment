@@ -26,9 +26,9 @@ class OrderEvaluatorBase {
         ndim(ndim),
         avg_new(window, ndim),
         avg_old(window, ndim),
-        sim_engine(odeint) {
-    s.resize(ndim);
-  }
+        s(ndim),
+        ds_dt(ndim),
+        sim_engine(odeint) {}
 
   /**
    * Evaluate phase order parameter of a specified oscilator network
@@ -42,7 +42,8 @@ class OrderEvaluatorBase {
     for (int i = 0; i < window * 2; i++) {
       const auto result = sim_engine.advance(sampling_dt, t, &s[0], K, w);
       t = result.t;
-      recorder_regist(&s[0]);
+      sim::target_model(ndim, K, w, t, &s[0], &ds_dt[0]);
+      recorder_regist(&s[0], &ds_dt[0]);
     }
     iteration += window * 2;
 
@@ -50,11 +51,12 @@ class OrderEvaluatorBase {
       if (iteration > max_iteration) {
         return EvalStatus::NotConverged;
       }
-
       iteration++;
+
       const auto result = sim_engine.advance(sampling_dt, t, &s[0], K, w);
       t = result.t;
-      recorder_regist(&s[0]);
+      sim::target_model(ndim, K, w, t, &s[0], &ds_dt[0]);
+      recorder_regist(&s[0], &ds_dt[0]);
     }
 
     return EvalStatus::Ok;
@@ -72,12 +74,15 @@ class OrderEvaluatorBase {
     return std::abs(R_new - R_old) < epsilon;
   }
 
-  void recorder_regist(const Real *s) { avg_old.push(avg_new.push(s)); }
+  void recorder_regist(const Real *s, const Real *ds_dt) {
+    avg_old.push(avg_new.push(s, ds_dt));
+  }
 
   Real _R = -1;
   order::KuramotoFixed<Real> avg_new, avg_old;
 
   std::vector<Real> s;
+  std::vector<Real> ds_dt;
   OdeInt sim_engine;
 };
 

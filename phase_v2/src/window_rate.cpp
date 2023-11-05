@@ -18,9 +18,9 @@ class OrderChain {
         dt(dt),
         ndim(ndim),
         avg(window, ndim),
-        sim_engine(ndim, dt) {
-    s.resize(ndim);
-  }
+        s(ndim),
+        ds_dt(ndim),
+        sim_engine(ndim, dt) {}
 
   void eval(int iteration, Real *out, const Real *K, const Real *w) {
     std::fill(s.begin(), s.end(), 0);
@@ -30,7 +30,8 @@ class OrderChain {
       for (int i = 0; i < window; i++) {
         const auto result = sim_engine.advance(dt, t, &s[0], K, w);
         t = result.t;
-        avg.push(&s[0]);
+        sim::target_model(ndim, K, w, t, &s[0], &ds_dt[0]);
+        avg.push(&s[0], &ds_dt[0]);
       }
 
       out[e] = avg.value();
@@ -41,6 +42,7 @@ class OrderChain {
   order::KuramotoFixed<Real> avg;
 
   std::vector<Real> s;
+  std::vector<Real> ds_dt;
   sim::RK4<Real> sim_engine;
 };
 

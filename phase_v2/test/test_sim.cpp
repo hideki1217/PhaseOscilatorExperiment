@@ -16,15 +16,19 @@ void measure_time_2d(Real k) {
   Real sampling_dt = 1;
   const int iteration = 30000;
 
+  std::vector<Real> s(ndim, 0);
+  std::vector<Real> ds_dt(ndim, 0);
+
   {
     Real t = 0;
-    std::vector<Real> s(ndim, 0);
     auto rk45 = sim::FehlbergRK45<Real>(ndim, 1e-2, 1e0, 1e-3);
     TIMESTAT({
       for (int e = 0; e < 30000; e++) {
         const auto result = rk45.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
         t = result.t;
-        avg.push(&s[0]);
+        sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+
+        avg.push(&s[0], &ds_dt[0]);
       }
       std::cout << avg.value() << std::endl;
     })
@@ -32,13 +36,14 @@ void measure_time_2d(Real k) {
   }
   {
     Real t = 0;
-    std::vector<Real> s(ndim, 0);
     auto rk4 = sim::RK4<Real>(ndim, 1e-2);
     TIMESTAT({
       for (int e = 0; e < 30000; e++) {
         const auto result = rk4.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
         t = result.t;
-        avg.push(&s[0]);
+        sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+
+        avg.push(&s[0], &ds_dt[0]);
       }
       std::cout << avg.value() << std::endl;
     })
@@ -61,15 +66,19 @@ void test_advance_2d(Real k, Real w0) {
     return 0;
   };
 
+  std::vector<Real> s(ndim, 0);
+  std::vector<Real> ds_dt(ndim, 0);
+
   auto rk45 = sim::FehlbergRK45<Real>(ndim, 1e-2, 1e0, 1e-3);
   Real rk45_order;
   {
     Real t = 0;
-    std::vector<Real> s(ndim, 0);
     for (int e = 0; e < iteration; e++) {
       const auto result = rk45.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
       t = result.t;
-      avg.push(&s[0]);
+      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+
+      avg.push(&s[0], &ds_dt[0]);
     }
     rk45_order = avg.value();
   }
@@ -79,11 +88,12 @@ void test_advance_2d(Real k, Real w0) {
   Real rk4_order;
   {
     Real t = 0;
-    std::vector<Real> s(ndim, 0);
     for (int e = 0; e < iteration; e++) {
       const auto result = rk4.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
       t = result.t;
-      avg.push(&s[0]);
+      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+
+      avg.push(&s[0], &ds_dt[0]);
     }
     rk4_order = avg.value();
   }

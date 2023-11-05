@@ -17,7 +17,7 @@ class KuramotoFixed {
   KuramotoFixed(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
-  Unit push(const Real *s) {
+  Unit push(const Real *s, const Real *ds_dt) {
     Real cos_mean = 0;
     for (int i = 0; i < ndim; i++) {
       cos_mean += std::cos(s[i]);
@@ -61,7 +61,7 @@ class FreqFixed {
   const int ndim;
   FreqFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
-  Unit push(const Real *s) {
+  Unit push(const Real *s, const Real *ds_dt) {
     std::abort();  // TODO
     const Real epsilon = 1e-4;
     Real ratio = 0;

@@ -129,6 +129,8 @@ class FehlbergRK45 {
     /**
      * reference: https://slpr.sakura.ne.jp/qp/runge-kutta-ex/#rkf45hauto
      */
+    h = std::min(h, max_h);
+    h = std::min(h, t_max - t);
     assert(h > 0);
     assert(h <= t_max - t);
 
@@ -181,8 +183,6 @@ class FehlbergRK45 {
 
     const auto delta = std::pow(atol / (2 * R), 0.25);
     h *= (delta <= 0.1) ? 0.1 : (delta >= 4) ? 4 : delta;
-    h = std::min(h, max_h);
-    h = std::min(h, t_max - t);
 
     reliability = R;
     return dt;

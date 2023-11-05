@@ -54,5 +54,38 @@ class FixedWindowOrder {
   collection::FixedQueue<Real> cos_q;
   collection::FixedQueue<Real> sin_q;
 };
+
+template <typename Real>
+class FreqFixed {
+  struct Unit {
+    Real ratio;
+  };
+
+ public:
+  const int ndim;
+  FreqFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
+
+  Unit push(const Real *s) {
+    std::abort();  // TODO
+    const Real epsilon = 1e-4;
+    Real ratio = 0;
+    for (int i = 0; i < ndim; i++) {
+      ratio += (s[i] < epsilon);
+    }
+    ratio /= ndim;
+
+    return push({ratio});
+  }
+
+  Unit push(const Unit inner) {
+    const auto ratio = ratio_q.push(inner.ratio);
+    return {ratio};
+  }
+
+  Real value() { return ratio_q.mean(); }
+
+ private:
+  collection::FixedQueue<Real> ratio_q;
+};
 }  // namespace order
 }  // namespace lib

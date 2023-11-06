@@ -9,16 +9,17 @@ enum EvalStatus {
   NotConverged = 1,
 };
 
-template <typename Real = double, typename OdeInt = sim::RK4<Real>>
-class OrderEvaluatorBase {
+template <typename Real = double, typename OdeInt = sim::RK4<Real>,
+          typename Order = order::KuramotoFixed<Real>>
+class OrderEvaluator {
  public:
   const int window;
   const Real epsilon;
   const Real sampling_dt;
   const int max_iteration;
   const int ndim;
-  OrderEvaluatorBase(int window, Real epsilon, Real sampling_dt,
-                     int max_iteration, int ndim, OdeInt odeint)
+  OrderEvaluator(int window, Real epsilon, Real sampling_dt, int max_iteration,
+                 int ndim, OdeInt odeint)
       : window(window),
         epsilon(epsilon),
         sampling_dt(sampling_dt),
@@ -79,31 +80,31 @@ class OrderEvaluatorBase {
   }
 
   Real _R = -1;
-  order::KuramotoFixed<Real> avg_new, avg_old;
+  Order avg_new, avg_old;
 
   std::vector<Real> s;
   std::vector<Real> ds_dt;
   OdeInt sim_engine;
 };
 
-template <typename Real = double>
-class OrderEvaluatorRK4 : public OrderEvaluatorBase<Real, sim::RK4<Real>> {
+template <typename Real = double, typename Order = order::KuramotoFixed<Real>>
+class OrderEvaluatorRK4 : public OrderEvaluator<Real, sim::RK4<Real>, Order> {
  public:
   OrderEvaluatorRK4(int window, Real epsilon, Real sampling_dt,
                     int max_iteration, int ndim, Real update_dt = 0.01)
-      : OrderEvaluatorBase<Real, sim::RK4<Real>>(
-            window, epsilon, sampling_dt, max_iteration, ndim,
-            sim::RK4<Real>(ndim, update_dt)) {}
+      : OrderEvaluator<Real, sim::RK4<Real>>(window, epsilon, sampling_dt,
+                                             max_iteration, ndim,
+                                             sim::RK4<Real>(ndim, update_dt)) {}
 };
 
-template <typename Real = double>
+template <typename Real = double, typename Order = order::KuramotoFixed<Real>>
 class OrderEvaluatorRK45
-    : public OrderEvaluatorBase<Real, sim::FehlbergRK45<Real>> {
+    : public OrderEvaluator<Real, sim::FehlbergRK45<Real>, Order> {
  public:
   OrderEvaluatorRK45(int window, Real epsilon, Real sampling_dt,
                      int max_iteration, int ndim, Real start_dt = 0.01,
                      Real max_dt = 1, Real atol = 1e-3)
-      : OrderEvaluatorBase<Real, sim::FehlbergRK45<Real>>(
+      : OrderEvaluator<Real, sim::FehlbergRK45<Real>>(
             window, epsilon, sampling_dt, max_iteration, ndim,
             sim::FehlbergRK45<Real>(ndim, start_dt, max_dt, atol)) {}
 };

@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 
 #include <opy.hpp>
+#include <order.hpp>
 
 namespace py = pybind11;
 using namespace lib;
@@ -12,14 +13,15 @@ PYBIND11_MODULE(opy, m) {
       .value("Ok", EvalStatus::Ok)
       .value("NotConverged", EvalStatus::NotConverged);
 
-  py::class_<OrderEvaluatorRK4<Real>>(m, "OrderEvaluatorRK4")
+#define TARGET OrderEvaluatorRK4<Real, order::KuramotoFixed<Real>>
+#define TARGET_NAME "KuramotoOrderEvaluatorRK4"
+  py::class_<TARGET>(m, TARGET_NAME)
       .def(py::init<int, Real, Real, int, int, Real>(), py::arg("window"),
            py::arg("epsilon"), py::arg("sampling_dt"), py::arg("max_iteration"),
            py::arg("ndim"), py::arg("update_dt"))
       .def(
           "eval",
-          [](OrderEvaluatorRK4<Real>& model, py::array_t<Real> K,
-             py::array_t<Real> w) {
+          [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
             return model.eval(K.data(), w.data());
@@ -27,22 +29,50 @@ PYBIND11_MODULE(opy, m) {
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",
           py::arg("K"), py::arg("w"))
-      .def("result", &OrderEvaluatorRK4<Real>::result)
-      .def_readonly("window", &OrderEvaluatorRK4<Real>::window)
-      .def_readonly("epsilon", &OrderEvaluatorRK4<Real>::epsilon)
-      .def_readonly("sampling_dt", &OrderEvaluatorRK4<Real>::sampling_dt)
-      .def_readonly("max_iteration", &OrderEvaluatorRK4<Real>::max_iteration)
-      .def_readonly("ndim", &OrderEvaluatorRK4<Real>::ndim);
+      .def("result", &TARGET::result)
+      .def_readonly("window", &TARGET::window)
+      .def_readonly("epsilon", &TARGET::epsilon)
+      .def_readonly("sampling_dt", &TARGET::sampling_dt)
+      .def_readonly("max_iteration", &TARGET::max_iteration)
+      .def_readonly("ndim", &TARGET::ndim);
+#undef TARGET
+#undef TARGET_NAME
 
-  py::class_<OrderEvaluatorRK45<Real>>(m, "OrderEvaluatorRK45")
+#define TARGET OrderEvaluatorRK4<Real, order::FreqFixed<Real>>
+#define TARGET_NAME "FreqOrderEvaluatorRK4"
+  py::class_<TARGET>(m, TARGET_NAME)
+      .def(py::init<int, Real, Real, int, int, Real>(), py::arg("window"),
+           py::arg("epsilon"), py::arg("sampling_dt"), py::arg("max_iteration"),
+           py::arg("ndim"), py::arg("update_dt"))
+      .def(
+          "eval",
+          [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
+            assert(model.ndim * model.ndim == K.size());
+            assert(model.ndim == w.size());
+            return model.eval(K.data(), w.data());
+          },
+          "Evaluate phase order parameter of a specified oscilator "
+          "network\nAnd return the status flag",
+          py::arg("K"), py::arg("w"))
+      .def("result", &TARGET::result)
+      .def_readonly("window", &TARGET::window)
+      .def_readonly("epsilon", &TARGET::epsilon)
+      .def_readonly("sampling_dt", &TARGET::sampling_dt)
+      .def_readonly("max_iteration", &TARGET::max_iteration)
+      .def_readonly("ndim", &TARGET::ndim);
+#undef TARGET
+#undef TARGET_NAME
+
+#define TARGET OrderEvaluatorRK45<Real, order::KuramotoFixed<Real>>
+#define TARGET_NAME "KuramotoOrderEvaluatorRK45"
+  py::class_<TARGET>(m, TARGET_NAME)
       .def(py::init<int, Real, Real, int, int, Real, Real, Real>(),
            py::arg("window"), py::arg("epsilon"), py::arg("sampling_dt"),
            py::arg("max_iteration"), py::arg("ndim"), py::arg("start_dt"),
            py::arg("max_dt"), py::arg("atol"))
       .def(
           "eval",
-          [](OrderEvaluatorRK45<Real>& model, py::array_t<Real> K,
-             py::array_t<Real> w) {
+          [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
             return model.eval(K.data(), w.data());
@@ -50,10 +80,37 @@ PYBIND11_MODULE(opy, m) {
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",
           py::arg("K"), py::arg("w"))
-      .def("result", &OrderEvaluatorRK45<Real>::result)
-      .def_readonly("window", &OrderEvaluatorRK45<Real>::window)
-      .def_readonly("epsilon", &OrderEvaluatorRK45<Real>::epsilon)
-      .def_readonly("sampling_dt", &OrderEvaluatorRK45<Real>::sampling_dt)
-      .def_readonly("max_iteration", &OrderEvaluatorRK45<Real>::max_iteration)
-      .def_readonly("ndim", &OrderEvaluatorRK45<Real>::ndim);
+      .def("result", &TARGET::result)
+      .def_readonly("window", &TARGET::window)
+      .def_readonly("epsilon", &TARGET::epsilon)
+      .def_readonly("sampling_dt", &TARGET::sampling_dt)
+      .def_readonly("max_iteration", &TARGET::max_iteration)
+      .def_readonly("ndim", &TARGET::ndim);
+#undef TARGET
+#undef TARGET_NAME
+#define TARGET OrderEvaluatorRK45<Real, order::FreqFixed<Real>>
+#define TARGET_NAME "FreqOrderEvaluatorRK45"
+  py::class_<TARGET>(m, TARGET_NAME)
+      .def(py::init<int, Real, Real, int, int, Real, Real, Real>(),
+           py::arg("window"), py::arg("epsilon"), py::arg("sampling_dt"),
+           py::arg("max_iteration"), py::arg("ndim"), py::arg("start_dt"),
+           py::arg("max_dt"), py::arg("atol"))
+      .def(
+          "eval",
+          [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
+            assert(model.ndim * model.ndim == K.size());
+            assert(model.ndim == w.size());
+            return model.eval(K.data(), w.data());
+          },
+          "Evaluate phase order parameter of a specified oscilator "
+          "network\nAnd return the status flag",
+          py::arg("K"), py::arg("w"))
+      .def("result", &TARGET::result)
+      .def_readonly("window", &TARGET::window)
+      .def_readonly("epsilon", &TARGET::epsilon)
+      .def_readonly("sampling_dt", &TARGET::sampling_dt)
+      .def_readonly("max_iteration", &TARGET::max_iteration)
+      .def_readonly("ndim", &TARGET::ndim);
+#undef TARGET
+#undef TARGET_NAME
 }

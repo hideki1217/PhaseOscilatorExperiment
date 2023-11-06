@@ -5,15 +5,14 @@ from pathlib import Path
 import opypy
 
 
-def main():
-    file = Path(__file__)
-    data = file.parent / "output" / file.stem
-    if not data.exists():
-        data.mkdir()
+def experiment(datadir: Path, order: opypy.Orders):
+    datadir = datadir / str(order)
+    if not datadir.exists():
+        datadir.mkdir()
 
     ndim = 2
     w = np.array([-1, 1.])
-    model = opypy.OrderEvaluator.default(ndim)
+    model = opypy.OrderEvaluator.default(ndim, order=order)
 
     def f(K1, K2, w):
         print(f"{K1}, {K2}")
@@ -29,17 +28,28 @@ def main():
 
     K_list = np.linspace(0, 3, 100)
     R_map = np.array([[f(K1, K2, w) for K1 in K_list] for K2 in K_list])
-
-    plt.plot(K_list, np.diag(R_map))
-    plt.tight_layout()
-    plt.savefig(data / "K1=K2_L=3.png")
-    plt.close()
-
     fig, ax = plt.subplots(figsize=(4.8, 4.8))
     ax.imshow(R_map, vmin=0, vmax=1)
     plt.tight_layout()
-    plt.savefig(data / "K1_K2_L=3.png")
+    plt.savefig(datadir / "K1_K2_L=3.png")
     plt.close()
+
+    K_list = np.linspace(0, 3, 1000)
+    R_list = np.array([f(K, K, w) for K in K_list])
+    plt.plot(K_list, R_list)
+    plt.tight_layout()
+    plt.savefig(datadir / "K1=K2_L=3.png")
+    plt.close()
+
+
+def main():
+    file = Path(__file__)
+    data = file.parent / "output" / file.stem
+    if not data.exists():
+        data.mkdir()
+
+    experiment(data, "kuramoto")
+    experiment(data, "freq")
 
 
 if __name__ == "__main__":

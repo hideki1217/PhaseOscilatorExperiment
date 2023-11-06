@@ -92,9 +92,9 @@ class OrderEvaluatorRK4 : public OrderEvaluator<Real, sim::RK4<Real>, Order> {
  public:
   OrderEvaluatorRK4(int window, Real epsilon, Real sampling_dt,
                     int max_iteration, int ndim, Real update_dt = 0.01)
-      : OrderEvaluator<Real, sim::RK4<Real>>(window, epsilon, sampling_dt,
-                                             max_iteration, ndim,
-                                             sim::RK4<Real>(ndim, update_dt)) {}
+      : OrderEvaluator<Real, sim::RK4<Real>, Order>(
+            window, epsilon, sampling_dt, max_iteration, ndim,
+            sim::RK4<Real>(ndim, update_dt)) {}
 };
 
 template <typename Real = double, typename Order = order::KuramotoFixed<Real>>
@@ -104,7 +104,7 @@ class OrderEvaluatorRK45
   OrderEvaluatorRK45(int window, Real epsilon, Real sampling_dt,
                      int max_iteration, int ndim, Real start_dt = 0.01,
                      Real max_dt = 1, Real atol = 1e-3)
-      : OrderEvaluator<Real, sim::FehlbergRK45<Real>>(
+      : OrderEvaluator<Real, sim::FehlbergRK45<Real>, Order>(
             window, epsilon, sampling_dt, max_iteration, ndim,
             sim::FehlbergRK45<Real>(ndim, start_dt, max_dt, atol)) {}
 };

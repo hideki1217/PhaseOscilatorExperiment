@@ -49,7 +49,8 @@ def main():
         data.mkdir()
 
     experiment(data, "kuramoto")
-    experiment(data, "freq")
+    experiment(data, "freq_rate0")
+    experiment(data, "freq_mean0")
 
 
 if __name__ == "__main__":

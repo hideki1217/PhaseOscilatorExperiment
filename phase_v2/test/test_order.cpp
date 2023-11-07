@@ -58,4 +58,28 @@ int main() {
 
 #undef test_2d
   }
+
+  {
+    auto model_2d =
+        lib::OrderEvaluatorRK45<double, lib::order::ZeroFreqMeanFixed<double>>(
+            30000, 1e-4, 0.01, int(1e6), 2);
+    auto theoritical_2d = [](const double K, const double w) -> double {
+      if (K >= w) {
+        return 1;
+      }
+      return 0;
+    };
+#define test_2d(K) \
+  assert_nearly_eq(_test_2d(model_2d, K, 1), theoritical_2d(K, 1), 1e-2);
+
+    test_2d(0);
+    test_2d(0.1);
+    test_2d(0.5);
+    test_2d(0.8);
+    test_2d(1.2);
+    test_2d(3.);
+    test_2d(5);
+
+#undef test_2d
+  }
 }

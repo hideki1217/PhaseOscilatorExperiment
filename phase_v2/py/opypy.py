@@ -2,7 +2,7 @@ import opy
 import numpy as np
 from typing import Literal
 
-Orders = Literal["freq", "kuramoto"]
+Orders = Literal["freq_rate0", "kuramoto", "freq_mean0"]
 
 
 class OrderEvaluator:
@@ -16,19 +16,25 @@ class OrderEvaluator:
                  order: Orders = 'kuramoto'):
         # NOTE: hard code
         if method == "rk4":
-            if order == "freq":
-                self._ = opy.FreqOrderEvaluatorRK4(
+            if order == "freq_rate0":
+                self._ = opy.ZeroFreqRateEvaluatorRK4(
                     window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
             if order == "kuramoto":
                 self._ = opy.KuramotoOrderEvaluatorRK4(
                     window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
+            if order == "freq_mean0":
+                self._ = opy.ZeroFreqMeanOrderEvaluatorRK4(
+                    window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
 
         if method == "rk45":
-            if order == "freq":
-                self._ = opy.FreqOrderEvaluatorRK45(
+            if order == "freq_rate0":
+                self._ = opy.ZeroFreqRateEvaluatorRK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
             if order == "kuramoto":
                 self._ = opy.KuramotoOrderEvaluatorRK45(
+                    window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
+            if order == "freq_mean0":
+                self._ = opy.ZeroFreqMeanOrderEvaluatorRK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
 
     @classmethod

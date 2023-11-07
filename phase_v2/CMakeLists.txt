@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -Wall")
 if(CMAKE_CXX_COMPILER MATCHES ".*icpx")
   message("Selected icpx flags")
-  set(CMAKE_CXX_FLAGS_RELEASE "-fast -DNDEBUG -qopenmp")
+  set(CMAKE_CXX_FLAGS_RELEASE " -O3 -xhost -DNDEBUG")
 else()
   message("Selected conventional flags")
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -fopenmp")
@@ -29,6 +29,12 @@ add_test(NAME test_collection COMMAND $<TARGET_FILE:test_collection>)
 add_executable(test_sim ${CMAKE_CURRENT_SOURCE_DIR}/test/test_sim.cpp)
 target_link_libraries(test_sim PRIVATE lib)
 add_test(NAME test_sim COMMAND $<TARGET_FILE:test_sim>)
+
+
+add_executable(perf_eval ${CMAKE_CURRENT_SOURCE_DIR}/test/perf_eval.cpp)
+target_link_libraries(perf_eval PRIVATE lib)
+target_link_options(perf_eval PRIVATE -pg)
+target_compile_options(perf_eval PRIVATE -pg -qopt-report)
 
 
 set(PYTHON_EXECUTABLE /${CMAKE_CURRENT_SOURCE_DIR}/venv/bin/python)

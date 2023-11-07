@@ -13,7 +13,7 @@ namespace sim {
 
 template <typename Real>
 static void target_model(int ndim, const Real *K, const Real *w, const Real t,
-                         const Real *s, Real *ds_dt) {
+                         const Real *s, Real *ds_dt) noexcept {
   for (int i = 0; i < ndim; i++) {
     ds_dt[i] = w[i];
   }
@@ -43,7 +43,8 @@ class RK4 {
     k4.resize(ndim);
   }
 
-  Result advance(Real T, Real t, Real *s, const Real *K, const Real *w) {
+  Result advance(Real T, Real t, Real *s, const Real *K,
+                 const Real *w) noexcept {
     const Real t_max = t + T;
 
     while (t < t_max) {

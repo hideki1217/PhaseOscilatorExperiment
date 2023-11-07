@@ -24,7 +24,7 @@ class KuramotoFixed {
   KuramotoFixed(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
-  Unit push(const Real *s, const Real *ds_dt) {
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
     Real cos_mean = 0;
     for (int i = 0; i < ndim; i++) {
       cos_mean += std::cos(s[i]);
@@ -40,13 +40,13 @@ class KuramotoFixed {
     return push({cos_mean, sin_mean});
   }
 
-  Unit push(const Unit inner) {
+  Unit push(const Unit inner) noexcept {
     auto cos_pop = cos_q.push(inner.cos);
     auto sin_pop = sin_q.push(inner.sin);
     return Unit(cos_pop, sin_pop);
   }
 
-  Real value() {
+  Real value() noexcept {
     auto cos_mean = cos_q.mean();
     auto sin_mean = sin_q.mean();
     const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
@@ -72,7 +72,7 @@ class ZeroFreqRateFixed {
   const int ndim;
   ZeroFreqRateFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
-  Unit push(const Real *s, const Real *ds_dt) {
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
     const Real epsilon = 1e-1;
     Real ratio = 0;
     for (int i = 0; i < ndim; i++) {
@@ -83,12 +83,12 @@ class ZeroFreqRateFixed {
     return push({ratio});
   }
 
-  Unit push(const Unit inner) {
+  Unit push(const Unit inner) noexcept {
     const auto ratio = ratio_q.push(inner.ratio);
     return {ratio};
   }
 
-  Real value() { return ratio_q.mean(); }
+  Real value() noexcept { return ratio_q.mean(); }
 
  private:
   collection::FixedQueue<Real> ratio_q;
@@ -109,16 +109,16 @@ class ZeroFreqMeanFixed {
   ZeroFreqMeanFixed(int window, int ndim)
       : ndim(ndim), freq_q(window, std::valarray<Real>(Real(0), ndim)) {}
 
-  Unit push(const Real *s, const Real *ds_dt) {
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
     return push({std::valarray<Real>(ds_dt, ndim)});
   }
 
-  Unit push(const Unit inner) {
+  Unit push(const Unit inner) noexcept {
     const auto freq = freq_q.push(inner.freq);
     return {freq};
   }
 
-  Real value() {
+  Real value() noexcept {
     static const Real eps = 1e-2;
     const auto freq_means = freq_q.mean();
 

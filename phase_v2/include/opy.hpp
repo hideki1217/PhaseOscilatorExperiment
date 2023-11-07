@@ -35,7 +35,7 @@ class OrderEvaluator {
    * Evaluate phase order parameter of a specified oscilator network
    * And return the status flag
    */
-  EvalStatus eval(const Real *K, const Real *w) {
+  EvalStatus eval(const Real *K, const Real *w) noexcept {
     std::fill(s.begin(), s.end(), 0);
     Real t = 0;
     int iteration = 0;
@@ -66,7 +66,7 @@ class OrderEvaluator {
   /**
    * Return evaluation result.
    */
-  Real result() { return _R; }
+  Real result() noexcept { return _R; }
 
  private:
   bool recorder_check() {

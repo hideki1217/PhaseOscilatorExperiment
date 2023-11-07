@@ -38,7 +38,7 @@ PYBIND11_MODULE(opy, m) {
 #undef TARGET
 #undef TARGET_NAME
 
-#define TARGET OrderEvaluatorRK4<Real, order::FreqFixed<Real>>
+#define TARGET OrderEvaluatorRK4<Real, order::ZeroFreqRateFixed<Real>>
 #define TARGET_NAME "FreqOrderEvaluatorRK4"
   py::class_<TARGET>(m, TARGET_NAME)
       .def(py::init<int, Real, Real, int, int, Real>(), py::arg("window"),
@@ -88,7 +88,7 @@ PYBIND11_MODULE(opy, m) {
       .def_readonly("ndim", &TARGET::ndim);
 #undef TARGET
 #undef TARGET_NAME
-#define TARGET OrderEvaluatorRK45<Real, order::FreqFixed<Real>>
+#define TARGET OrderEvaluatorRK45<Real, order::ZeroFreqRateFixed<Real>>
 #define TARGET_NAME "FreqOrderEvaluatorRK45"
   py::class_<TARGET>(m, TARGET_NAME)
       .def(py::init<int, Real, Real, int, int, Real, Real, Real>(),

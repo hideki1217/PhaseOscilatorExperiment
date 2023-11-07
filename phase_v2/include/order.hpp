@@ -5,6 +5,10 @@
 
 namespace lib {
 namespace order {
+/**
+ * Estimate Kuramoto Phase parameter
+ * $\frac{1}{T} \int_0^T $
+ */
 template <typename Real>
 class KuramotoFixed {
   struct Unit {
@@ -53,15 +57,19 @@ class KuramotoFixed {
   collection::FixedQueue<Real> sin_q;
 };
 
+/**
+ * Estimate a probablity that Freqency sample is in [-D, D].
+ * D = 0.1
+ */
 template <typename Real>
-class FreqFixed {
+class ZeroFreqRateFixed {
   struct Unit {
     Real ratio;
   };
 
  public:
   const int ndim;
-  FreqFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
+  ZeroFreqRateFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
   Unit push(const Real *s, const Real *ds_dt) {
     const Real epsilon = 1e-1;

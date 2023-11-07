@@ -5,15 +5,14 @@ from pathlib import Path
 import opypy
 
 
-def main():
-    file = Path(__file__)
-    data = file.parent / "output" / file.stem
-    if not data.exists():
-        data.mkdir()
+def experiment(datadir, order):
+    datadir = datadir / str(order)
+    if not datadir.exists():
+        datadir.mkdir()
 
     ndim = 3
     w = np.array([-1, 0, 1])
-    model = opypy.OrderEvaluator.default(ndim)
+    model = opypy.OrderEvaluator.default(ndim, order=order)
 
     def f(K1, K2, K3, w):
         K_ = np.array([0, K1, K2,
@@ -33,7 +32,7 @@ def main():
     fig, ax = plt.subplots(figsize=(4.8, 4.8))
     ax.imshow(R_map, vmin=0, vmax=1)
     plt.tight_layout()
-    plt.savefig(data / "K2_K1=K3_L=2.png")
+    plt.savefig(datadir / "K2_K1=K3_L=2.png")
     plt.close()
 
     R_map = np.array([[f(0, K2, K3, w)for K2 in np.linspace(0, 2, 100)]
@@ -41,7 +40,7 @@ def main():
     fig, ax = plt.subplots(figsize=(4.8, 4.8))
     ax.imshow(R_map, vmin=0, vmax=1)
     plt.tight_layout()
-    plt.savefig(data / "K2_K3_K1=0_L=2.png")
+    plt.savefig(datadir / "K2_K3_K1=0_L=2.png")
     plt.close()
 
     for K2 in [0, 0.1, 0.5, 1.0, 2.0]:
@@ -50,8 +49,19 @@ def main():
         fig, ax = plt.subplots(figsize=(4.8, 4.8))
         ax.imshow(R_map, vmin=0, vmax=1)
         plt.tight_layout()
-        plt.savefig(data / f"K1_K3_K2={K2:.1f}_L=2.png")
+        plt.savefig(datadir / f"K1_K3_K2={K2:.1f}_L=2.png")
         plt.close()
+
+
+def main():
+    file = Path(__file__)
+    data = file.parent / "output" / file.stem
+    if not data.exists():
+        data.mkdir()
+
+    experiment(data, "kuramoto")
+    experiment(data, "freq_mean0")
+    experiment(data, "freq_rate0")
 
 
 if __name__ == "__main__":

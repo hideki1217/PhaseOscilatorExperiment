@@ -6,15 +6,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-def main():
-    file = Path(__file__)
-    data = file.parent / "output" / file.stem
+def experiment(data, order):
+    data = data / str(order)
     if not data.exists():
         data.mkdir()
 
     ndim = 3
     w = np.array([-1, 0, 1.])
-    model = opypy.OrderEvaluator.default(ndim)
+    model = opypy.OrderEvaluator.default(ndim, order=order)
 
     def f(K1, K2, K3, w):
         K_ = np.array([0, K1, K2,
@@ -65,6 +64,17 @@ def main():
     for img in imgs:
         video.write(img)
     video.release()
+
+
+def main():
+    file = Path(__file__)
+    data = file.parent / "output" / file.stem
+    if not data.exists():
+        data.mkdir()
+
+    experiment(data, "kuramoto")
+    experiment(data, "freq_mean0")
+    experiment(data, "freq_rate0")
 
 
 if __name__ == "__main__":

@@ -66,7 +66,7 @@ class OrderEvaluator {
   /**
    * Return evaluation result.
    */
-  Real result() noexcept { return _R; }
+  Real result() const { return _R; }
 
  private:
   bool recorder_check() {

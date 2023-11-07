@@ -108,7 +108,8 @@ class FehlbergRK45 {
   /**
    * advance T time from (t, s) on the model.
    */
-  Result advance(Real T, Real t, Real *s, const Real *K, const Real *w) {
+  Result advance(Real T, Real t, Real *s, const Real *K,
+                 const Real *w) noexcept {
     const Real t_max = t + T;
     h = first_h;
 

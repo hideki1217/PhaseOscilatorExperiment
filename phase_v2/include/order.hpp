@@ -46,7 +46,7 @@ class KuramotoFixed {
     return Unit(cos_pop, sin_pop);
   }
 
-  Real value() noexcept {
+  Real value() const noexcept {
     auto cos_mean = cos_q.mean();
     auto sin_mean = sin_q.mean();
     const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
@@ -88,7 +88,7 @@ class ZeroFreqRateFixed {
     return {ratio};
   }
 
-  Real value() noexcept { return ratio_q.mean(); }
+  Real value() const noexcept { return ratio_q.mean(); }
 
  private:
   collection::FixedQueue<Real> ratio_q;
@@ -118,7 +118,7 @@ class ZeroFreqMeanFixed {
     return {freq};
   }
 
-  Real value() noexcept {
+  Real value() const noexcept {
     static const Real eps = 1e-2;
     const auto freq_means = freq_q.mean();
 

@@ -73,7 +73,7 @@ class ZeroFreqRateFixed {
   ZeroFreqRateFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
   Unit push(const Real *s, const Real *ds_dt) noexcept {
-    const Real epsilon = 1e-1;
+    const Real epsilon = 1e-2;
     Real ratio = 0;
     for (int i = 0; i < ndim; i++) {
       ratio += (std::abs(ds_dt[i]) < epsilon);

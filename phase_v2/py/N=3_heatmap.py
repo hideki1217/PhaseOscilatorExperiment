@@ -27,16 +27,18 @@ def experiment(datadir, order):
         else:
             return np.nan
 
-    R_map = np.array([[f(K1, K2, K1, w)for K1 in np.linspace(0, 2 / np.sqrt(2), 100)]
-                      for K2 in np.linspace(0, 2, 100)])
+    m = 100
+
+    R_map = np.array([[f(K1, K2, K1, w)for K1 in np.linspace(0, 2 / np.sqrt(2), m)]
+                      for K2 in np.linspace(0, 2, m)])
     fig, ax = plt.subplots(figsize=(4.8, 4.8))
     ax.imshow(R_map, vmin=0, vmax=1)
     plt.tight_layout()
     plt.savefig(datadir / "K2_K1=K3_L=2.png")
     plt.close()
 
-    R_map = np.array([[f(0, K2, K3, w)for K2 in np.linspace(0, 2, 100)]
-                      for K3 in np.linspace(0, 2, 100)])
+    R_map = np.array([[f(0, K2, K3, w)for K2 in np.linspace(0, 2, m)]
+                      for K3 in np.linspace(0, 2, m)])
     fig, ax = plt.subplots(figsize=(4.8, 4.8))
     ax.imshow(R_map, vmin=0, vmax=1)
     plt.tight_layout()
@@ -44,8 +46,8 @@ def experiment(datadir, order):
     plt.close()
 
     for K2 in [0, 0.1, 0.5, 1.0, 2.0]:
-        R_map = np.array([[f(K1, K2, K3, w)for K1 in np.linspace(0, 2, 100)]
-                          for K3 in np.linspace(0, 2, 100)])
+        R_map = np.array([[f(K1, K2, K3, w)for K1 in np.linspace(0, 2, m)]
+                          for K3 in np.linspace(0, 2, m)])
         fig, ax = plt.subplots(figsize=(4.8, 4.8))
         ax.imshow(R_map, vmin=0, vmax=1)
         plt.tight_layout()

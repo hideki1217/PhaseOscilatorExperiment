@@ -39,7 +39,7 @@ class OrderEvaluator:
 
     @classmethod
     def default(cls, ndim, order: Orders = "kuramoto"):
-        return OrderEvaluator(window=30000, epsilon=1e-4, sampling_dt=0.1, max_iteration=100000, ndim=ndim, method='rk45', order=order)
+        return OrderEvaluator(window=3000, epsilon=1e-4, sampling_dt=1, max_iteration=10000, ndim=ndim, method='rk45', order=order)
 
     def eval(self, K, w):
         status = self._.eval(np.array(K), np.array(w))

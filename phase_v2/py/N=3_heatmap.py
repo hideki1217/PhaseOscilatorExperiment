@@ -21,7 +21,6 @@ def experiment(datadir, order):
 
         status = model.eval(K_, w)
 
-        print(f"{K1}, {K2}")
         if (status.value == 0):
             return model.result()
         else:

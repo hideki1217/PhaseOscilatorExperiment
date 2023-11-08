@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+import time
 
 import opypy
 
@@ -22,7 +23,7 @@ def main():
         w = np.array([-w, w])
         K_ = np.array([0, K, K, 0])
         model = opypy.OrderEvaluator(
-            window=window, epsilon=epsilon, sampling_dt=sampling_dt, max_iteration=int(window*max_p), ndim=ndim)
+            window=window, epsilon=epsilon, sampling_dt=sampling_dt, max_iteration=int(window*max_p), ndim=ndim, method='rk45')
 
         status = model.eval(K_, w)
 
@@ -102,6 +103,45 @@ def main():
         plt.xscale("log")
         plt.savefig(data / f"K_epsilon_window={window}.png")
         plt.close()
+
+    sampling_dt = 0.1
+    window = 30000
+    T = sampling_dt * window
+    for K in [0.5, 0.99, 1.01, 2.0]:
+        R = theoritical_2d(K, w)
+        sampling_dts = np.power(10, np.linspace(-2, 2, 200))
+        res = []
+        times = []
+        for sampling_dt in sampling_dts:
+            start = time.time()
+            _R = f(K, w, window=int(T/sampling_dt), sampling_dt=sampling_dt)
+            times.append(time.time() - start)
+            res.append(_R - R)
+        fig, ax = plt.subplots()
+        p0 = ax.scatter(sampling_dts, res, c='C0',  label="delta")
+        ax.set_ylabel("delta")
+        _ax = ax.twinx()
+        p1 = _ax.scatter(sampling_dts, times, c='C1', label="time(s)")
+        _ax.set_ylabel("time(s)")
+        plt.legend(handles=[p0, p1])
+        plt.tight_layout()
+        plt.xscale("log")
+        ax.set_ylim((-0.01, 0.01))
+        plt.savefig(data / f"samplingdt_T={T}_K={K:.4f}.png")
+        plt.close()
+
+    T = 30000 * 0.1
+    K_list = np.linspace(0, 2, 100)
+    R_optimal = np.array([theoritical_2d(K, w) for K in K_list])
+    for window in [30000, 3000, 1500, 750]:
+        dR = np.array([f(K, w, window=window, sampling_dt=T / window)
+                       for K in K_list]) - R_optimal
+        plt.plot(K_list, dR, label=f"window = {window}")
+    plt.ylim((-0.01, 0.01))
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(data / f"difference.png")
+    plt.close()
 
 
 if __name__ == "__main__":

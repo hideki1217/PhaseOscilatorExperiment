@@ -4,9 +4,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <iostream>
 #include <limits>
-#include <vector>
+#include <memory>
 
 namespace lib {
 namespace sim {
@@ -35,13 +34,14 @@ class RK4 {
   const int ndim;
   const Real max_dt;
 
-  RK4(const int ndim, const Real max_dt) : ndim(ndim), max_dt(max_dt) {
-    _s.resize(ndim);
-    k1.resize(ndim);
-    k2.resize(ndim);
-    k3.resize(ndim);
-    k4.resize(ndim);
-  }
+  RK4(const int ndim, const Real max_dt)
+      : ndim(ndim),
+        max_dt(max_dt),
+        _s(new(std::align_val_t{64}) Real[ndim]),
+        k1(new(std::align_val_t{64}) Real[ndim]),
+        k2(new(std::align_val_t{64}) Real[ndim]),
+        k3(new(std::align_val_t{64}) Real[ndim]),
+        k4(new(std::align_val_t{64}) Real[ndim]) {}
 
   Result advance(Real T, Real t, Real *s, const Real *K,
                  const Real *w) noexcept {
@@ -75,8 +75,8 @@ class RK4 {
     return t + dt;
   }
 
-  std::vector<Real> _s;
-  std::vector<Real> k1, k2, k3, k4;
+  std::unique_ptr<Real[]> _s;
+  std::unique_ptr<Real[]> k1, k2, k3, k4;
 };
 
 template <typename Real>
@@ -97,13 +97,13 @@ class FehlbergRK45 {
         min_h(min_h),
         max_h(max_h),
         ndim(ndim),
-        tmp(ndim),
-        k0(ndim),
-        k1(ndim),
-        k2(ndim),
-        k3(ndim),
-        k4(ndim),
-        k5(ndim) {}
+        tmp(new(std::align_val_t{64}) Real[ndim]),
+        k0(new(std::align_val_t{64}) Real[ndim]),
+        k1(new(std::align_val_t{64}) Real[ndim]),
+        k2(new(std::align_val_t{64}) Real[ndim]),
+        k3(new(std::align_val_t{64}) Real[ndim]),
+        k4(new(std::align_val_t{64}) Real[ndim]),
+        k5(new(std::align_val_t{64}) Real[ndim]) {}
 
   /**
    * advance T time from (t, s) on the model.
@@ -176,7 +176,6 @@ class FehlbergRK45 {
 
     // Try to update state
     Real dt = 0;
-    // std::cout << "    R = " << R << " h =" << h << " t = " << t << std::endl;
     if (R < R_base) {
       t += (dt = h);
       sumofp(ndim, s, s, h * d[0], &k0[0], h * d[1], &k2[0], h * d[2], &k3[0],
@@ -191,13 +190,13 @@ class FehlbergRK45 {
   }
   Real h;
   Real reliability;
-  std::vector<Real> tmp;
-  std::vector<Real> k0;
-  std::vector<Real> k1;
-  std::vector<Real> k2;
-  std::vector<Real> k3;
-  std::vector<Real> k4;
-  std::vector<Real> k5;
+  std::unique_ptr<Real[]> tmp;
+  std::unique_ptr<Real[]> k0;
+  std::unique_ptr<Real[]> k1;
+  std::unique_ptr<Real[]> k2;
+  std::unique_ptr<Real[]> k3;
+  std::unique_ptr<Real[]> k4;
+  std::unique_ptr<Real[]> k5;
 };
 }  // namespace sim
 }  // namespace lib

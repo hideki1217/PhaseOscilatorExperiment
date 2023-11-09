@@ -9,7 +9,7 @@ enum EvalStatus {
 };
 
 template <typename Real = double, typename OdeInt = sim::RK4<Real>,
-          typename Order = order::KuramotoFixed<Real>>
+          typename Order = order::Kuramoto<Real>>
 class OrderEvaluator {
  public:
   const int window;
@@ -88,7 +88,7 @@ class OrderEvaluator {
   OdeInt sim_engine;
 };
 
-template <typename Real = double, typename Order = order::KuramotoFixed<Real>>
+template <typename Real = double, typename Order = order::Kuramoto<Real>>
 class OrderEvaluatorRK4 : public OrderEvaluator<Real, sim::RK4<Real>, Order> {
  public:
   OrderEvaluatorRK4(int window, Real epsilon, Real sampling_dt,
@@ -98,7 +98,7 @@ class OrderEvaluatorRK4 : public OrderEvaluator<Real, sim::RK4<Real>, Order> {
             sim::RK4<Real>(ndim, update_dt)) {}
 };
 
-template <typename Real = double, typename Order = order::KuramotoFixed<Real>>
+template <typename Real = double, typename Order = order::Kuramoto<Real>>
 class OrderEvaluatorRK45
     : public OrderEvaluator<Real, sim::FehlbergRK45<Real>, Order> {
  public:

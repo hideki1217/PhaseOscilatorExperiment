@@ -39,7 +39,7 @@ class OrderChain {
   }
 
  private:
-  order::KuramotoFixed<Real> avg;
+  order::Kuramoto<Real> avg;
 
   std::vector<Real> s;
   std::vector<Real> ds_dt;

@@ -12,7 +12,7 @@ void measure_time_2d(Real k) {
   std::vector<Real> K = {0, k, k, 0};
   std::vector<Real> w = {-1, 1.};
 
-  order::KuramotoFixed<Real> avg(10000, ndim);
+  order::Kuramoto<Real> avg(10000, ndim);
   Real sampling_dt = 1;
   const int iteration = 30000;
 
@@ -58,7 +58,7 @@ void test_advance_2d(Real k, Real w0) {
 
   Real sampling_dt = 1;
   const int iteration = 4000;
-  auto avg = order::KuramotoFixed<Real>(2000, ndim);
+  auto avg = order::Kuramoto<Real>(2000, ndim);
   auto theoritical_2d = [](const double K, const double w) -> double {
     if (K >= w) {
       return std::cos(0.5 * std::asin(w / K));

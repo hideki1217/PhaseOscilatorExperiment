@@ -10,6 +10,8 @@ def experiment(data, order):
     data = data / str(order)
     if not data.exists():
         data.mkdir()
+    else:
+        return
 
     ndim = 3
     w = np.array([-1, 0, 1.])
@@ -73,6 +75,7 @@ def main():
         data.mkdir()
 
     experiment(data, "kuramoto")
+    experiment(data, "relative_kuramoto")
     experiment(data, "freq_mean0")
     experiment(data, "freq_rate0")
 

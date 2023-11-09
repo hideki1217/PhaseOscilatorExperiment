@@ -61,7 +61,7 @@ int main() {
 
   {
     auto model_2d =
-        lib::OrderEvaluatorRK45<double, lib::order::ZeroFreqMeanFixed<double>>(
+        lib::OrderEvaluatorRK45<double, lib::order::ZeroFreqMean<double>>(
             30000, 1e-4, 0.01, int(1e6), 2);
     auto theoritical_2d = [](const double K, const double w) -> double {
       if (K >= w) {

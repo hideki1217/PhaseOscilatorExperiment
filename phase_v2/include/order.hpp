@@ -11,7 +11,7 @@ namespace order {
  * $\frac{1}{T} \int_0^T $
  */
 template <typename Real>
-class KuramotoFixed {
+class Kuramoto {
   struct Unit {
     Real cos;
     Real sin;
@@ -21,7 +21,7 @@ class KuramotoFixed {
 
  public:
   const int ndim;
-  KuramotoFixed(int window, int ndim)
+  Kuramoto(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
   Unit push(const Real *s, const Real *ds_dt) noexcept {
@@ -59,18 +59,73 @@ class KuramotoFixed {
 };
 
 /**
+ * \sum_{i > 1} e^{i(\theta_i(t) - \theta_0)}
+ */
+template <typename Real>
+class RelativeKuramoto {
+  struct Unit {
+    Real cos;
+    Real sin;
+
+    Unit(Real cos, Real sin) : cos(cos), sin(sin) {}
+  };
+
+ public:
+  const int ndim;
+  RelativeKuramoto(int window, int ndim)
+      : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
+
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
+    const int base = 0;
+
+    Real cos_mean = 0;
+    for (int i = 0; i < ndim; i++) {
+      if (i == base) continue;
+      cos_mean += std::cos(s[i] - s[base]);
+    }
+    cos_mean /= ndim - 1;
+
+    Real sin_mean = 0;
+    for (int i = 0; i < ndim; i++) {
+      if (i == base) continue;
+      sin_mean += std::sin(s[i] - s[base]);
+    }
+    sin_mean /= ndim - 1;
+
+    return push({cos_mean, sin_mean});
+  }
+
+  Unit push(const Unit inner) noexcept {
+    auto cos_pop = cos_q.push(inner.cos);
+    auto sin_pop = sin_q.push(inner.sin);
+    return Unit(cos_pop, sin_pop);
+  }
+
+  Real value() const noexcept {
+    auto cos_mean = cos_q.mean();
+    auto sin_mean = sin_q.mean();
+    const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
+    return R_new;
+  }
+
+ private:
+  collection::FixedQueue<Real> cos_q;
+  collection::FixedQueue<Real> sin_q;
+};
+
+/**
  * Estimate a probablity that Freqency sample is in [-D, D].
  * D = 0.1
  */
 template <typename Real>
-class ZeroFreqRateFixed {
+class ZeroFreqRate {
   struct Unit {
     Real ratio;
   };
 
  public:
   const int ndim;
-  ZeroFreqRateFixed(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
+  ZeroFreqRate(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
   Unit push(const Real *s, const Real *ds_dt) noexcept {
     const Real epsilon = 1e-2;
@@ -99,14 +154,14 @@ class ZeroFreqRateFixed {
  * TODO: maybe this is slow because it create valarray every times
  */
 template <typename Real>
-class ZeroFreqMeanFixed {
+class ZeroFreqMean {
   struct Unit {
     std::valarray<Real> freq;
   };
 
  public:
   const int ndim;
-  ZeroFreqMeanFixed(int window, int ndim)
+  ZeroFreqMean(int window, int ndim)
       : ndim(ndim), freq_q(window, std::valarray<Real>(Real(0), ndim)) {}
 
   Unit push(const Real *s, const Real *ds_dt) noexcept {

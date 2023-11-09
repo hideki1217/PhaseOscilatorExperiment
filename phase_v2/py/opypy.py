@@ -2,7 +2,7 @@ import opy
 import numpy as np
 from typing import Literal
 
-Orders = Literal["freq_rate0", "kuramoto", "freq_mean0"]
+Orders = Literal["freq_rate0", "kuramoto", "freq_mean0", "relative_kuramoto"]
 
 
 class OrderEvaluator:
@@ -19,27 +19,34 @@ class OrderEvaluator:
             if order == "freq_rate0":
                 self._ = opy.ZeroFreqRateEvaluatorRK4(
                     window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
-            if order == "kuramoto":
+            elif order == "kuramoto":
                 self._ = opy.KuramotoOrderEvaluatorRK4(
                     window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
-            if order == "freq_mean0":
+            elif order == "freq_mean0":
                 self._ = opy.ZeroFreqMeanOrderEvaluatorRK4(
                     window, epsilon, sampling_dt, max_iteration, ndim, update_dt=0.01)
+            else:
+                raise NotImplementedError
 
         if method == "rk45":
             if order == "freq_rate0":
                 self._ = opy.ZeroFreqRateEvaluatorRK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
-            if order == "kuramoto":
-                self._ = opy.KuramotoOrderEvaluatorRK45(
+            elif order == "kuramoto":
+                self._ = opy.KuramotoEvaluatorRK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
-            if order == "freq_mean0":
-                self._ = opy.ZeroFreqMeanOrderEvaluatorRK45(
+            elif order == "freq_mean0":
+                self._ = opy.ZeroFreqMeanEvaluatorRK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
+            elif order == "relative_kuramoto":
+                self._ = opy.RelativeKuramotoEvaluatorRK45(
+                    window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
+            else:
+                raise NotImplementedError
 
     @classmethod
-    def default(cls, ndim, order: Orders = "kuramoto"):
-        return OrderEvaluator(window=3000, epsilon=1e-4, sampling_dt=1, max_iteration=10000, ndim=ndim, method='rk45', order=order)
+    def default(cls, ndim, order: Orders = "kuramoto", window=3000, epsilon=1e-4, sampling_dt=1):
+        return OrderEvaluator(window=window, epsilon=epsilon, sampling_dt=sampling_dt, max_iteration=window * 4, ndim=ndim, method='rk45', order=order)
 
     def eval(self, K, w):
         status = self._.eval(np.array(K), np.array(w))

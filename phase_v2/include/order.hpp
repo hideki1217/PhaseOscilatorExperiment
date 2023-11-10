@@ -76,19 +76,15 @@ class RelativeKuramoto {
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
 
   Unit push(const Real *s, const Real *ds_dt) noexcept {
-    const int base = 0;
-
     Real cos_mean = 0;
-    for (int i = 0; i < ndim; i++) {
-      if (i == base) continue;
-      cos_mean += std::cos(s[i] - s[base]);
+    for (int i = 1; i < ndim; i++) {
+      cos_mean += std::cos(s[i] - s[0]);
     }
     cos_mean /= ndim - 1;
 
     Real sin_mean = 0;
-    for (int i = 0; i < ndim; i++) {
-      if (i == base) continue;
-      sin_mean += std::sin(s[i] - s[base]);
+    for (int i = 1; i < ndim; i++) {
+      sin_mean += std::sin(s[i] - s[0]);
     }
     sin_mean /= ndim - 1;
 
@@ -102,8 +98,8 @@ class RelativeKuramoto {
   }
 
   Real value() const noexcept {
-    auto cos_mean = cos_q.mean();
-    auto sin_mean = sin_q.mean();
+    const auto cos_mean = cos_q.mean();
+    const auto sin_mean = sin_q.mean();
     const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
     return R_new;
   }

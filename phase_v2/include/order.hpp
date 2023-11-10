@@ -20,6 +20,8 @@ class Kuramoto {
   };
 
  public:
+  using V = Real;
+
   const int ndim;
   Kuramoto(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
@@ -71,6 +73,8 @@ class RelativeKuramoto {
   };
 
  public:
+  using V = Real;
+
   const int ndim;
   RelativeKuramoto(int window, int ndim)
       : ndim(ndim), cos_q(window, 0.), sin_q(window, 0.) {}
@@ -120,6 +124,8 @@ class ZeroFreqRate {
   };
 
  public:
+  using V = Real;
+
   const int ndim;
   ZeroFreqRate(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
 
@@ -156,6 +162,8 @@ class ZeroFreqMean {
   };
 
  public:
+  using V = Real;
+
   const int ndim;
   ZeroFreqMean(int window, int ndim)
       : ndim(ndim), freq_q(window, std::valarray<Real>(Real(0), ndim)) {}

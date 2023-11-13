@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <memory>
 #include <opy.hpp>
 #include <random>
@@ -23,18 +24,51 @@ class UniformSelector {
     return items[dist(rng)];
   }
 };
+
+class Statistics {
+ public:
+  Statistics(int num_class) : counts(num_class, 0) {}
+
+  void push(int x) {
+    assert(x < counts.size());
+    counts[x]++;
+    total++;
+  }
+
+  double rate(int x) {
+    assert(x < counts.size());
+    return double(counts[x]) / total;
+  }
+
+  void reset() {
+    total = 0;
+    std::fill(counts.begin(), counts.end(), 0);
+  }
+
+ private:
+  uint total = 0;
+  std::vector<uint> counts;
+};
 }  // namespace utils
+
+namespace mcmc {
+enum Result {
+  Accepted = 0,
+  Rejected,
+  MinusConnection,
+  SmallOrder,
+  NotConverged,
+  LENGTH
+};
+const char *result2str(Result result) {
+  static const char *nameTT[] = {"Accepted", "Rejected", "MinusConnection",
+                                 "SmallOrder", "NotConverged"};
+  return nameTT[result];
+}
 
 template <typename Order>
 class BolzmanMarkovChain {
   using Real = typename Order::V;
-  enum Result {
-    Accepted = 0,
-    Rejected,
-    MinusConnection,
-    UnderLimit,
-    NotConverged,
-  };
 
  public:
   const int ndim;
@@ -65,14 +99,22 @@ class BolzmanMarkovChain {
     for (int i = 0; i < ndim * ndim; i++) K_sum += K[i];
   }
 
-  Real *connection() { return &K[0]; }
-  Real energy() { return K_sum / ndim; }
+  const Real *connection() const { return &K[0]; }
+  Real energy() const { return K_sum / ndim; }
 
-  void step(int n) {
-    for (int i = 0; i < n; i++) step();
+  /**
+   * reprica exchange
+   */
+  bool try_swap(BolzmanMarkovChain<Order> &rhs) {
+    const Real rate = std::exp((beta - rhs.beta) * (energy() - rhs.energy()));
+    if (1 <= rate || std::uniform_real_distribution<>(0, 1)(_rng) < rate) {
+      K.swap(rhs.K);
+      return true;
+    }
+    return false;
   }
 
-  void step() {
+  Result step() {
     const auto idx = _target_indexs.select(_rng);
     const auto xdi = (idx % ndim) * ndim + (idx / ndim);
     const auto prev_K_idx = K[idx];
@@ -89,6 +131,8 @@ class BolzmanMarkovChain {
       K[idx] = K[xdi] = prev_K_idx;
       K_sum = prev_K_sum;
     }
+
+    return result;
   }
 
  private:
@@ -103,7 +147,7 @@ class BolzmanMarkovChain {
     }
     const auto R = evaluator.result();
     if (R < threshold) {
-      return Result::UnderLimit;
+      return Result::SmallOrder;
     }
 
     // dE = E(t+1) - E(t)
@@ -126,4 +170,6 @@ class BolzmanMarkovChain {
   utils::UniformSelector<int> _target_indexs;
   std::mt19937 _rng;
 };
+}  // namespace mcmc
+
 }  // namespace lib

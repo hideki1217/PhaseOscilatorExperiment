@@ -7,3 +7,5 @@ pybind11/
 *.mp4
 *.csv
 **/*.so
+
+**/tmp_*

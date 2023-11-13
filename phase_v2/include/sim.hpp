@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ia32intrin.h>
+#include <immintrin.h>
+
 #include <_math.hpp>
 #include <algorithm>
 #include <cassert>
@@ -11,8 +14,8 @@ namespace lib {
 namespace sim {
 
 template <typename Real>
-static void target_model(int ndim, const Real *K, const Real *w, const Real t,
-                         const Real *s, Real *ds_dt) noexcept {
+void target_model(int ndim, const Real *K, const Real *w, const Real t,
+                  const Real *s, Real *ds_dt) noexcept {
   for (int i = 0; i < ndim; i++) {
     ds_dt[i] = w[i];
   }
@@ -20,6 +23,46 @@ static void target_model(int ndim, const Real *K, const Real *w, const Real t,
   for (int i = 0; i < ndim; i++) {
     for (int j = 0; j < ndim; j++) {
       ds_dt[i] += K[i * ndim + j] * std::sin(s[j] - s[i]);
+    }
+  }
+}
+
+template <>
+void target_model(int ndim, const double *K, const double *w, const double t,
+                  const double *s, double *ds_dt) noexcept {
+  constexpr int simd_size = 4;
+  const int simd_iteration = ndim / simd_size;
+  const int remainder = ndim % simd_size;
+
+  for (int i = 0; i < ndim; i += simd_size) {
+    __m256d ds_dt_i = _mm256_load_pd(&w[i]);
+    __m256d s_i = _mm256_load_pd(&s[i]);
+    for (int j = 0; j < ndim; j++) {
+      __m256d sin_diff =
+          _mm256_sin_pd(_mm256_sub_pd(_mm256_set1_pd(s[j]), s_i));
+      __m256d K_ = _mm256_load_pd(&K[j * ndim + i]);
+      ds_dt_i = _mm256_add_pd(ds_dt_i, _mm256_mul_pd(K_, sin_diff));
+    }
+
+    switch (ndim - i) {
+      case 3: {
+        __m256i mask = _mm256_setr_epi64x(~0, ~0, ~0, 0);
+        _mm256_maskstore_pd(&ds_dt[i], mask, ds_dt_i);
+        break;
+      }
+      case 2: {
+        __m256i mask = _mm256_setr_epi64x(~0, ~0, 0, 0);
+        _mm256_maskstore_pd(&ds_dt[i], mask, ds_dt_i);
+        break;
+      }
+      case 1: {
+        __m256i mask = _mm256_setr_epi64x(~0, 0, 0, 0);
+        _mm256_maskstore_pd(&ds_dt[i], mask, ds_dt_i);
+        break;
+      }
+      default:
+        _mm256_store_pd(&ds_dt[i], ds_dt_i);
+        break;
     }
   }
 }

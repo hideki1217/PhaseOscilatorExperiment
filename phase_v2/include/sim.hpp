@@ -179,41 +179,64 @@ class FehlbergRK45 {
     assert(h > 0);
     assert(h <= t_max - t);
 
-    static constexpr Real c_0 = 1. / 4, a_0[] = {1. / 4};
-    static constexpr Real c_1 = 3. / 8, a_1[] = {3. / 32, 9. / 32};
-    static constexpr Real c_2 = 12. / 13,
-                          a_2[] = {1932. / 2197, -7200. / 2197, 7296. / 2197};
-    static constexpr Real c_3 = 1.,
-                          a_3[] = {439. / 216, -8., 3680. / 513, -845. / 4104};
-    static constexpr Real c_4 = 1. / 2, a_4[] = {-8. / 27, 2, -3544. / 2565,
-                                                 1859. / 4104, -11. / 40};
-    static constexpr Real b[] = {1. / 360, -128. / 4275, -2197. / 75240,
-                                 1. / 50, 2. / 55};
-    static constexpr Real d[] = {25. / 216, 1408. / 2565, 2197. / 4104,
-                                 -1. / 5};
+    static constexpr Real c_0 = 1. / 4;
+    static constexpr Real a_00 = 1. / 4;
+
+    static constexpr Real c_1 = 3. / 8;
+    static constexpr Real a_10 = 3. / 32;
+    static constexpr Real a_11 = 9. / 32;
+
+    static constexpr Real c_2 = 12. / 13;
+    static constexpr Real a_20 = 1932. / 2197;
+    static constexpr Real a_21 = -7200. / 2197;
+    static constexpr Real a_22 = 7296. / 2197;
+
+    static constexpr Real c_3 = 1.;
+    static constexpr Real a_30 = 439. / 216;
+    static constexpr Real a_31 = -8.;
+    static constexpr Real a_32 = 3680. / 513;
+    static constexpr Real a_33 = -845. / 4104;
+
+    static constexpr Real c_4 = 1. / 2;
+    static constexpr Real a_40 = -8. / 27;
+    static constexpr Real a_41 = 2;
+    static constexpr Real a_42 = -3544. / 2565;
+    static constexpr Real a_43 = 1859. / 4104;
+    static constexpr Real a_44 = -11. / 40;
+
+    static constexpr Real b_0 = 1. / 360;
+    static constexpr Real b_1 = -128. / 4275;
+    static constexpr Real b_2 = -2197. / 75240;
+    static constexpr Real b_3 = 1. / 50;
+    static constexpr Real b_4 = 2. / 55;
+
+    static constexpr Real d_0 = 25. / 216;
+    static constexpr Real d_1 = 1408. / 2565;
+    static constexpr Real d_2 = 2197. / 4104;
+    static constexpr Real d_3 = -1. / 5;
 
     target_model(ndim, K, w, t, s, &k0[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_0[0], &k0[0]);
+    sumofp(ndim, &tmp[0], s, h * a_00, &k0[0]);
     target_model(ndim, K, w, t + c_0 * h, &tmp[0], &k1[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_1[0], &k0[0], h * a_1[1], &k1[0]);
+    sumofp(ndim, &tmp[0], s, h * a_10, &k0[0], h * a_11, &k1[0]);
     target_model(ndim, K, w, t + c_1 * h, &tmp[0], &k2[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_2[0], &k0[0], h * a_2[1], &k1[0], h * a_2[2],
+    sumofp(ndim, &tmp[0], s, h * a_20, &k0[0], h * a_21, &k1[0], h * a_22,
            &k2[0]);
     target_model(ndim, K, w, t + c_2 * h, &tmp[0], &k3[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_3[0], &k0[0], h * a_3[1], &k1[0], h * a_3[2],
-           &k2[0], h * a_3[3], &k3[0]);
+    sumofp(ndim, &tmp[0], s, h * a_30, &k0[0], h * a_31, &k1[0], h * a_32,
+           &k2[0], h * a_33, &k3[0]);
     target_model(ndim, K, w, t + c_3 * h, &tmp[0], &k4[0]);
 
-    sumofp(ndim, &tmp[0], s, h * a_4[0], &k0[0], h * a_4[1], &k1[0], h * a_4[2],
-           &k2[0], h * a_4[3], &k3[0], h * a_4[4], &k4[0]);
+    sumofp(ndim, &tmp[0], s, h * a_40, &k0[0], h * a_41, &k1[0], h * a_42,
+           &k2[0], h * a_43, &k3[0], h * a_44, &k4[0]);
     target_model(ndim, K, w, t + c_4 * h, &tmp[0], &k5[0]);
 
-    sumofp(ndim, &tmp[0], b[0], &k0[0], b[1], &k2[0], b[2], &k3[0], b[3],
-           &k4[0], b[4], &k5[0]);
+    sumofp(ndim, &tmp[0], b_0, &k0[0], b_1, &k2[0], b_2, &k3[0], b_3, &k4[0],
+           b_4, &k5[0]);
     const auto R = norm(ndim, &tmp[0]) + std::numeric_limits<Real>::epsilon();
     const auto R_base = atol;
 
@@ -221,8 +244,8 @@ class FehlbergRK45 {
     Real dt = 0;
     if (R < R_base) {
       t += (dt = h);
-      sumofp(ndim, s, s, h * d[0], &k0[0], h * d[1], &k2[0], h * d[2], &k3[0],
-             h * d[3], &k4[0]);
+      sumofp(ndim, s, s, h * d_0, &k0[0], h * d_1, &k2[0], h * d_2, &k3[0],
+             h * d_3, &k4[0]);
     }
 
     const auto delta = std::pow(atol / (2 * R), 0.25);

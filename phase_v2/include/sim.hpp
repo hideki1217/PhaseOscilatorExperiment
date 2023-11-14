@@ -1,7 +1,9 @@
 #pragma once
 
+#ifdef SIM_AVX2
 #include <ia32intrin.h>
 #include <immintrin.h>
+#endif
 
 #include <_math.hpp>
 #include <algorithm>
@@ -26,6 +28,8 @@ void target_model(int ndim, const Real *K, const Real *w, const Real t,
     }
   }
 }
+
+#ifdef SIM_AVX2
 
 template <>
 void target_model(int ndim, const double *K, const double *w, const double t,
@@ -66,6 +70,8 @@ void target_model(int ndim, const double *K, const double *w, const double t,
     }
   }
 }
+
+#endif
 
 template <typename Real>
 class RK4 {

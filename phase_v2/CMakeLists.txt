@@ -15,6 +15,9 @@ else()
 endif()
 set (CMAKE_EXE_LINKER_FLAGS "-qopenmp")
 
+add_definitions(-DSIM_AVX2)
+add_definitions(-DMATH_AVX2)
+
 add_library(lib INTERFACE)
 target_include_directories(lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -47,7 +50,3 @@ add_custom_target(copy_shared_object ALL
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/build/*.so ${CMAKE_CURRENT_SOURCE_DIR}/py/
   DEPENDS opy window_rate
 )
-
-# add_custom_command(TARGET opy window_rate POST_BUILD
-#   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/build/*.so ${CMAKE_CURRENT_SOURCE_DIR}/py/
-# )

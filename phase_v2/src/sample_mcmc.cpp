@@ -1,3 +1,4 @@
+#include <_concurrent.hpp>
 #include <iostream>
 #include <mcmc.hpp>
 #include <order.hpp>
@@ -29,6 +30,8 @@ struct Result {
   std::vector<double> exchange_rates;
 };
 
+lib::concurrent::ThreadPool thread_pool(8);
+
 template <typename target_t>
 Result reprica_exchange(const Param<target_t> p) {
   std::mt19937 rng(p.seed);
@@ -42,17 +45,21 @@ Result reprica_exchange(const Param<target_t> p) {
         p.ndim, p.w, p.K, p.threshold, p.betas[r], p.scales[r], rng()));
   }
 
-// Burn-in
-#pragma omp parallel for
+  // Burn-in
   for (int r = 0; r < p.num_reprica; r++) {
-    for (int i = 0; i < p.burn_in; i++) markovs[r].step();
+    thread_pool.post([&markovs, &p, r]() {
+      for (int i = 0; i < p.burn_in; i++) markovs[r].step();
+    });
   }
+  thread_pool.join();
 
-  for (int e = 0; e < 100; e++) {
-#pragma omp parallel for
+  for (int e = 0; e < 1000; e++) {
     for (int r = 0; r < p.num_reprica; r++) {
-      for (int i = 0; i < p.T * p.swap; i++) markovs[r].step();
+      thread_pool.post([&markovs, &p, r]() {
+        for (int i = 0; i < p.T * p.swap; i++) markovs[r].step();
+      });
     }
+    thread_pool.join();
 
     for (int i = e % 2; i < p.num_reprica - 1; i += 2) {
       count_total[i]++;

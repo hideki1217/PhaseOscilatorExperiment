@@ -1,3 +1,5 @@
+#pragma once
+
 #include <order.hpp>
 #include <sim.hpp>
 

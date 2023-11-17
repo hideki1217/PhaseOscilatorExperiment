@@ -1,6 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
+#include <mcmc.hpp>
 #include <opy.hpp>
 #include <order.hpp>
 
@@ -32,6 +33,25 @@ void export_rk45(Module& m, const char* name) {
       .def_readonly("sampling_dt", &TARGET::sampling_dt)
       .def_readonly("max_iteration", &TARGET::max_iteration)
       .def_readonly("ndim", &TARGET::ndim);
+}
+
+template <typename Order, typename Module>
+void export_mcmc(Module& m, const char* name) {
+  using TARGET = mcmc::BolzmanMarkovChain<Order>;
+  py::class_<TARGET>(m, name)
+      .def(py::init([](py::array_t<Real> w, py::array_t<Real> K, Real threshold,
+                       Real beta, Real scale, int seed) {
+        assert(K.size() == w.size() * w.size());
+        const int ndim = w.size();
+        return TARGET(ndim, w.data(), K.data(), threshold, beta, scale, seed);
+      }))
+      .def("step", [](TARGET& self) { return static_cast<int>(self.step()); })
+      .def("state",
+           [](TARGET& self) {
+             return py::array_t<Real>(self.ndim, self.connection());
+           })
+      .def("energy", &TARGET::energy)
+      .def("try_swap", &TARGET::try_swap);
 }
 
 PYBIND11_MODULE(opy, m) {
@@ -120,4 +140,7 @@ PYBIND11_MODULE(opy, m) {
                                              "RelativeKuramotoEvaluatorRK45");
   export_rk45<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_RK45");
 
+  export_mcmc<order::Kuramoto<Real>>(m, "Kuramoto_MCMC");
+  export_mcmc<order::RelativeKuramoto<Real>>(m, "RelativeKuramoto_MCMC");
+  export_mcmc<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_MCMC");
 }

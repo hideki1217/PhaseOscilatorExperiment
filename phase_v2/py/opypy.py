@@ -1,6 +1,7 @@
 import opy
 import numpy as np
 from typing import Literal
+import enum
 
 Orders = Literal["freq_rate0", "kuramoto", "freq_mean0",
                  "relative_kuramoto", "num_of_avg_freq_mode"]
@@ -58,3 +59,40 @@ class OrderEvaluator:
 
     def result(self):
         return self._.result()
+
+
+class MCMCResult(enum.Enum):
+    Accepted = 0
+    Rejected = 1
+    MinusConnection = 2
+    SmallOrder = 3
+    NotConverged = 4
+
+
+class MCMC:
+    def __init__(self, w, initial_K, threshold, beta, scale, seed, order: Orders = "kuramoto"):
+        if order == "kuramoto":
+            self._ = opy.Kuramoto_MCMC(np.array(w), np.array(
+                initial_K), threshold, beta, scale, seed)
+        elif order == "relative_kuramoto":
+            self._ = opy.RelativeKuramoto_MCMC(np.array(w), np.array(
+                initial_K), threshold, beta, scale, seed)
+        elif order == "num_of_avg_freq_mode":
+            self._ = opy.NumOfAvgFreqMode_MCMC(np.array(w), np.array(
+                initial_K), threshold, beta, scale, seed)
+        else:
+            raise NotImplementedError()
+
+    def step(self) -> MCMCResult:
+        result = self._.step()
+        return MCMCResult(result)
+
+    def try_swap(self, lhs: "MCMC"):
+        assert type(self._) == type(lhs._)
+        return self._.try_swap(lhs._)
+
+    def state(self) -> np.ndarray:
+        return self._.state()
+
+    def energy(self):
+        return self._.energy()

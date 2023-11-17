@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <order.hpp>
 #include <sim.hpp>
 
@@ -29,15 +30,19 @@ class OrderEvaluator {
         avg_new(window, ndim),
         avg_old(window, ndim),
         s(new(std::align_val_t{64}) Real[ndim]),
+        s_ini(new(std::align_val_t{64}) Real[ndim]),
         ds_dt(new(std::align_val_t{64}) Real[ndim]),
-        sim_engine(std::move(odeint)) {}
+        sim_engine(std::move(odeint)) {
+    // HACK: hard coding
+    std::fill_n(&s_ini[0], ndim, Real(0));
+  }
 
   /**
    * Evaluate phase order parameter of a specified oscilator network
    * And return the status flag
    */
   EvalStatus eval(const Real *K, const Real *w) noexcept {
-    std::fill_n(&s[0], ndim, 0);
+    std::memcpy(&s[0], &s_ini[0], ndim);
     Real t = 0;
     int iteration = 0;
 
@@ -86,6 +91,7 @@ class OrderEvaluator {
   Order avg_new, avg_old;
 
   std::unique_ptr<Real[]> s;
+  std::unique_ptr<Real[]> s_ini;
   std::unique_ptr<Real[]> ds_dt;
   OdeInt sim_engine;
 };

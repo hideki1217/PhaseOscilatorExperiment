@@ -1,3 +1,4 @@
+#include <_common.hpp>
 #include <_concurrent.hpp>
 #include <iostream>
 #include <mcmc.hpp>
@@ -61,6 +62,7 @@ Result reprica_exchange(const Param<target_t> p) {
     }
     thread_pool.join();
 
+    eprintf("%d's try_swap", e + 1);
     for (int i = e % 2; i < p.num_reprica - 1; i += 2) {
       count_total[i]++;
       if (markovs[i].try_swap(markovs[i + 1])) {

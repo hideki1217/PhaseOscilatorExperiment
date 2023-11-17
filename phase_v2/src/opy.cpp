@@ -118,4 +118,6 @@ PYBIND11_MODULE(opy, m) {
   export_rk45<order::ZeroFreqMean<Real>>(m, "ZeroFreqMeanEvaluatorRK45");
   export_rk45<order::RelativeKuramoto<Real>>(m,
                                              "RelativeKuramotoEvaluatorRK45");
+  export_rk45<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_RK45");
+
 }

@@ -2,7 +2,8 @@ import opy
 import numpy as np
 from typing import Literal
 
-Orders = Literal["freq_rate0", "kuramoto", "freq_mean0", "relative_kuramoto"]
+Orders = Literal["freq_rate0", "kuramoto", "freq_mean0",
+                 "relative_kuramoto", "num_of_avg_freq_mode"]
 
 
 class OrderEvaluator:
@@ -40,6 +41,9 @@ class OrderEvaluator:
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
             elif order == "relative_kuramoto":
                 self._ = opy.RelativeKuramotoEvaluatorRK45(
+                    window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
+            elif order == "num_of_avg_freq_mode":
+                self._ = opy.NumOfAvgFreqMode_RK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
             else:
                 raise NotImplementedError

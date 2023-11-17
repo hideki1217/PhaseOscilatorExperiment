@@ -193,5 +193,50 @@ class ZeroFreqMean {
  private:
   collection::FixedQueue<std::valarray<Real>> freq_q;
 };
+
+/**
+ * Estimate mean frequency and count up clusters.
+ * TODO: maybe this is slow because it create valarray every times
+ */
+template <typename Real>
+class NumOfAvgFreqMode {
+  struct Unit {
+    std::valarray<Real> freq;
+  };
+
+ public:
+  using V = Real;
+
+  const int ndim;
+  NumOfAvgFreqMode(int window, int ndim)
+      : ndim(ndim), freq_q(window, std::valarray<Real>(Real(0), ndim)) {}
+
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
+    return push({std::valarray<Real>(ds_dt, ndim)});
+  }
+
+  Unit push(const Unit inner) noexcept {
+    const auto freq = freq_q.push(inner.freq);
+    return {freq};
+  }
+
+  Real value() const noexcept {
+    static const Real eps = 1e-2;
+    auto freq_means = freq_q.mean();
+
+    std::sort(std::begin(freq_means), std::end(freq_means));
+    Real r = 0, prev = -1e10;
+    for (auto freq : freq_means) {
+      if (freq - prev > eps) r += 1;
+      prev = freq;
+    }
+    r = (ndim - r) / (ndim - 1);
+
+    return r;
+  }
+
+ private:
+  collection::FixedQueue<std::valarray<Real>> freq_q;
+};
 }  // namespace order
 }  // namespace lib

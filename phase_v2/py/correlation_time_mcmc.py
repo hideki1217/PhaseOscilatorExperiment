@@ -6,6 +6,7 @@ import json
 import hashlib
 
 import opypy
+import common
 
 
 @dataclasses.dataclass
@@ -21,13 +22,6 @@ class Param:
         return f"{self.ndim}_{str(self.order)}_{self.threshold:.3f}_{self.scale:.8f}_{self.beta:.4f}_{self.seed}"
 
 
-def create_w(N):
-    # N-fractional point sequence of Cauchy distribution
-    def F_inv(p, x0=0., r=1.): return x0 + r * np.tan(np.pi * (p - 0.5))
-
-    return F_inv(np.array(list(range(1, N+1))) / (N + 1))
-
-
 def experiment(datadir: Path, p: Param, MaxWindow: int):
     indentity = f"{p.ndim}_{p.order}_{p.threshold:.3f}_{hashlib.md5(str(p).encode('utf-8')).hexdigest()}"
     datadir = datadir / indentity
@@ -41,7 +35,7 @@ def experiment(datadir: Path, p: Param, MaxWindow: int):
     BurnIn = MaxWindow
     SampleN = MaxWindow * 100
 
-    w = create_w(p.ndim)
+    w = common.create_w(p.ndim)
     K = np.array([[5. * (i != j) for i in range(p.ndim)]
                  for j in range(p.ndim)])
 

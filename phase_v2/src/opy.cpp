@@ -48,7 +48,7 @@ void export_mcmc(Module& m, const char* name) {
       .def("step", [](TARGET& self) { return static_cast<int>(self.step()); })
       .def("state",
            [](TARGET& self) {
-             return py::array_t<Real>(self.ndim, self.connection());
+             return py::array_t<Real>(self.ndim * self.ndim, self.connection());
            })
       .def("energy", &TARGET::energy)
       .def("try_swap", &TARGET::try_swap);

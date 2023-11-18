@@ -28,7 +28,7 @@ def create_w(N):
     return F_inv(np.array(list(range(1, N+1))) / (N + 1))
 
 
-def experiment(datadir: Path, p: Param):
+def experiment(datadir: Path, p: Param, MaxWindow: int):
     indentity = f"{p.ndim}_{p.order}_{p.threshold:.3f}_{hashlib.md5(str(p).encode('utf-8')).hexdigest()}"
     datadir = datadir / indentity
     if not datadir.exists():
@@ -38,9 +38,8 @@ def experiment(datadir: Path, p: Param):
         with open(datadir / "param.json", mode="w") as f:
             json.dump(dataclasses.asdict(p), f)
 
-    BurnIn = 100
-    SampleN = 50000
-    MaxWindow = 500
+    BurnIn = MaxWindow
+    SampleN = MaxWindow * 100
 
     w = create_w(p.ndim)
     K = np.array([[5. * (i != j) for i in range(p.ndim)]
@@ -94,13 +93,13 @@ def main():
     if not data.exists():
         data.mkdir()
 
-    experiment(data, Param(2, "kuramoto", 0.78))
-    experiment(data, Param(2, "num_of_avg_freq_mode", 0.9))
-    experiment(data, Param(2, "relative_kuramoto", 0.78))
+    experiment(data, Param(2, "kuramoto", 0.78), 500)
+    experiment(data, Param(2, "num_of_avg_freq_mode", 0.9), 500)
+    experiment(data, Param(2, "relative_kuramoto", 0.78), 500)
 
-    experiment(data, Param(3, "kuramoto", 0.78))
-    experiment(data, Param(3, "num_of_avg_freq_mode", 0.9))
-    experiment(data, Param(3, "relative_kuramoto", 0.78))
+    experiment(data, Param(3, "kuramoto", 0.78), 3000)
+    experiment(data, Param(3, "num_of_avg_freq_mode", 0.9), 3000)
+    experiment(data, Param(3, "relative_kuramoto", 0.78), 3000)
 
 
 if __name__ == "__main__":

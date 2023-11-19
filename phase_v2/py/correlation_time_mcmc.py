@@ -91,9 +91,9 @@ def main():
     experiment(data, Param(2, "num_of_avg_freq_mode", 0.9), 500)
     experiment(data, Param(2, "relative_kuramoto", 0.78), 500)
 
-    experiment(data, Param(3, "kuramoto", 0.78), 3000)
-    experiment(data, Param(3, "num_of_avg_freq_mode", 0.9), 3000)
-    experiment(data, Param(3, "relative_kuramoto", 0.78), 3000)
+    experiment(data, Param(3, "kuramoto", 0.78), 750)
+    experiment(data, Param(3, "num_of_avg_freq_mode", 0.9), 750)
+    experiment(data, Param(3, "relative_kuramoto", 0.78), 750)
 
 
 if __name__ == "__main__":

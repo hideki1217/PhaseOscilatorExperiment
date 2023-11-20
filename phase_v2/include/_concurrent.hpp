@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_define.hpp>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -83,6 +84,12 @@ class ThreadPool {
   std::condition_variable owner_condition;
   bool terminated;
 };
+
+#if defined(OPY_NUM_THREAD) && OPY_NUM_THREAD >= 1
+ThreadPool pool(OPY_NUM_THREAD);
+#else
+ThreadPool pool(1);
+#endif
 
 }  // namespace concurrent
 }  // namespace lib

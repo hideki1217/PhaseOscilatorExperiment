@@ -54,6 +54,30 @@ void export_mcmc(Module& m, const char* name) {
       .def("try_swap", &TARGET::try_swap);
 }
 
+template <typename Order, typename Module>
+void export_reprica_mcmc(Module& m, const char* name) {
+  using TARGET = mcmc::RepricaMCMC<Order>;
+  py::class_<TARGET>(m, name)
+      .def(py::init([](py::array_t<Real> w, py::array_t<Real> K, Real threshold,
+                       py::array_t<Real> betas, py::array_t<Real> scales,
+                       int seed) {
+        assert(K.size() == w.size() * w.size());
+        assert(betas.size() == scales.size());
+
+        const int ndim = w.size();
+        const int num_reprica = betas.size();
+        return TARGET(ndim, w.data(), K.data(), threshold, num_reprica,
+                      betas.data(), scales.data(), seed);
+      }))
+      .def("step", &TARGET::step)
+      .def("exchange",
+           [](TARGET& self) {
+             const auto result = self.exchange();
+             return py::make_tuple(result.target, result.occured);
+           })
+      .def("__getitem__", &TARGET::operator[]);
+}
+
 PYBIND11_MODULE(opy, m) {
   py::enum_<EvalStatus>(m, "EvalStatus")
       .value("Ok", EvalStatus::Ok)
@@ -143,4 +167,10 @@ PYBIND11_MODULE(opy, m) {
   export_mcmc<order::Kuramoto<Real>>(m, "Kuramoto_MCMC");
   export_mcmc<order::RelativeKuramoto<Real>>(m, "RelativeKuramoto_MCMC");
   export_mcmc<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_MCMC");
+
+  export_reprica_mcmc<order::Kuramoto<Real>>(m, "Kuramoto_RepricaMCMC");
+  export_reprica_mcmc<order::RelativeKuramoto<Real>>(
+      m, "RelativeKuramoto_RepricaMCMC");
+  export_reprica_mcmc<order::NumOfAvgFreqMode<Real>>(
+      m, "NumOfAvgFreqMode_RepricaMCMC");
 }

@@ -1,6 +1,6 @@
 import opy
 import numpy as np
-from typing import Literal
+from typing import Literal, Optional
 import enum
 
 Orders = Literal["freq_rate0", "kuramoto", "freq_mean0",
@@ -87,12 +87,45 @@ class MCMC:
         result = self._.step()
         return MCMCResult(result)
 
-    def try_swap(self, lhs: "MCMC"):
+    def try_swap(self, lhs: "MCMC") -> bool:
         assert type(self._) == type(lhs._)
-        return self._.try_swap(lhs._)
+        return bool(self._.try_swap(lhs._))
 
     def state(self) -> np.ndarray:
         return self._.state()
 
     def energy(self):
         return self._.energy()
+
+
+class RepricaMCMC:
+    def __init__(self, w, initial_K, threshold, betas, scales, seed, order: Orders = "kuramoto"):
+        if order == "kuramoto":
+            self._ = opy.Kuramoto_RepricaMCMC(np.array(w), np.array(
+                initial_K), threshold, np.array(betas), np.array(scales), seed)
+        elif order == "relative_kuramoto":
+            self._ = opy.RelativeKuramoto_RepricaMCMC(np.array(w), np.array(
+                initial_K), threshold, np.array(betas), np.array(scales),  seed)
+        elif order == "num_of_avg_freq_mode":
+            self._ = opy.NumOfAvgFreqMode_RepricaMCMC(np.array(w), np.array(
+                initial_K), threshold, np.array(betas), np.array(scales), seed)
+        else:
+            raise NotImplementedError()
+
+        self._c_exchange = 0
+        self._num_reprica = len(betas)
+
+    def step(self, n: int):
+        self._.step(n)
+
+    def exchange(self) -> list[Optional[bool]]:
+        """_summary_
+            reprica exchange
+        Returns:
+            list[Optional[bool]]: None -> not try, true/false -> is_exchange_occurred
+        """
+        (target, occured) = self._.exchange()  # represented by bits
+        return [(occured & (1 << i)) if (target & (1 << i)) else None for i in range(self._num_reprica - 1)]
+
+    def __getitem__(self, index: int) -> MCMC:
+        return self._[index]

@@ -1,6 +1,8 @@
+#include <_concurrent.hpp>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <opy.hpp>
 #include <random>
@@ -169,6 +171,68 @@ class BolzmanMarkovChain {
 
   utils::UniformSelector<int> _target_indexs;
   std::mt19937 _rng;
+};
+
+template <typename Order>
+class RepricaMCMC {
+  using Real = typename Order::V;
+
+ public:
+  const int ndim;
+  const Real threshold;
+  const int num_reprica;
+
+  RepricaMCMC(int ndim, const Real *w, const Real *K, Real threshold,
+              int num_reprica, const Real *betas, const Real *scales, int seed)
+      : ndim(ndim), threshold(threshold), num_reprica(num_reprica) {
+    for (int i = 0; i < num_reprica; i++) {
+      mcmc_list.emplace_back(BolzmanMarkovChain<Order>(
+          ndim, w, K, threshold, betas[i], scales[i], seed + i));
+    }
+  }
+
+  /**
+   * ATTENTION: not async, you create multiple threads and join them.
+   */
+  void step(int n = 1) {
+    for (int r = 0; r < num_reprica; r++) {
+      concurrent::pool.post([this, r, n]() {
+        for (int i = 0; i < n; i++) mcmc_list[r].step();
+      });
+    }
+    concurrent::pool.join();
+  }
+
+  struct ExchangeResult {
+    uint target;
+    uint occured;
+  };
+  /**
+   * if (ret & 1<<r) then mcmc[r] <=> mcmc[r+1] is occured.
+   */
+  ExchangeResult exchange() {
+    assert(num_reprica < std::numeric_limits<uint>::digits);
+
+    uint target = 0;
+    uint occured = 0;
+    for (int r = (c_exchange++ % 2); r + 1 < num_reprica; r += 2) {
+      target += uint(1) << r;
+      if (mcmc_list[r].try_swap(mcmc_list[r + 1])) {
+        occured += (uint(1) << r);
+      }
+    }
+
+    return {target, occured};
+  }
+
+  BolzmanMarkovChain<Order> &operator[](int index) {
+    assert(0 <= index && index < num_reprica);
+    return mcmc_list[index];
+  }
+
+ private:
+  int c_exchange = 0;
+  std::vector<BolzmanMarkovChain<Order>> mcmc_list;
 };
 }  // namespace mcmc
 

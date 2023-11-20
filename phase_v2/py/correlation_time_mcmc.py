@@ -53,7 +53,6 @@ def experiment(datadir: Path, p: Param, MaxWindow: int):
         print("Start: Sampling")
         K_list = []
         for i in range(SampleN):
-            print(f"{i+1}/{SampleN}({(i+1)/(SampleN) * 100:.1f}%)", end="\r")
             K_list.append(mcmc.state().copy())
             mcmc.step()
         print("end: Sampling")
@@ -72,7 +71,6 @@ def experiment(datadir: Path, p: Param, MaxWindow: int):
     KK_list = np.array(KK_list)
     KK_list = KK_list / KK_list[0]
 
-    print(f"Start: w_KK.png")
     fig, ax = plt.subplots()
     ax.scatter(w_list, KK_list, s=2)
     plt.grid()
@@ -94,6 +92,10 @@ def main():
     experiment(data, Param(3, "kuramoto", 0.78), 750)
     experiment(data, Param(3, "num_of_avg_freq_mode", 0.9), 750)
     experiment(data, Param(3, "relative_kuramoto", 0.78), 750)
+
+    experiment(data, Param(4, "kuramoto", 0.78), 1000)
+    experiment(data, Param(4, "num_of_avg_freq_mode", 0.9), 1000)
+    experiment(data, Param(4, "relative_kuramoto", 0.78), 1000)
 
 
 if __name__ == "__main__":

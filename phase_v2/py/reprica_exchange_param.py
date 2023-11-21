@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 import json
 import random
+from typing import Callable
 
 import opypy
 import common
@@ -43,7 +44,7 @@ def _measure_exchange_rate(order: opypy.Orders,
 
     M = len(betas)
     mcmc_list = opypy.RepricaMCMC(w, K, threshold, betas, scales, seed, order)
-    stat = [[]] * (M-1)
+    stat = [[] for _ in range(M-1)]
 
     # Burn-In
     mcmc_list.step(burn_in)
@@ -60,6 +61,31 @@ def _measure_exchange_rate(order: opypy.Orders,
     return exchange_rate
 
 
+def bisec_target(target_val: float,
+                 span: (float, float),
+                 eval: Callable[[float], float],
+                 eps: float = 1e-2,
+                 verbose=True) -> float:
+    assert span[0] < span[1]
+    _l, _r = span
+    for _ in range(int(np.ceil(np.log2((_r - _l) / eps)))):
+        if verbose:
+            print(f"{_l:.6f} < - > {_r:.6f}", flush=True)
+
+        _p = (_l + _r) / 2
+
+        val = eval(_p)
+        if verbose:
+            print(f"{val}", flush=True)
+
+        if target_val < val:
+            _l = _p
+        else:
+            _r = _p
+
+    return _p
+
+
 def experiment(datadir, order: opypy.Orders, threshold: float, ndim: int):
     identity = f"{str(order)}_{ndim}_{threshold:.4f}"
     datadir = datadir / identity
@@ -70,7 +96,7 @@ def experiment(datadir, order: opypy.Orders, threshold: float, ndim: int):
     target_exchange_rate = 0.5
     min_beta = 1.0
     max_beta = 100.
-    bisec_iteration = 10
+    bisec_eps = 1e-2
     _seeder = random.Random(42)
     def seeder(): return _seeder.randint(0, 256)
 
@@ -79,19 +105,11 @@ def experiment(datadir, order: opypy.Orders, threshold: float, ndim: int):
     print(f"==== {identity}", flush=True)
 
     # min_betaに対するscaleを二分探索する
-    _scale_l, _scale_r = 1e-10, 5
-    for _ in range(bisec_iteration):
-        print(f"{_scale_l:.6f} < - > {_scale_r:.6f}", flush=True)
-        scale = (_scale_l + _scale_r) / 2
-
-        accepted_rate = _measure_accepted_rate(
-            order, threshold, ndim, min_beta, scale, seeder(), w)
-
-        print(f"{accepted_rate:.4f}", flush=True)
-        if target_accepted_rate < accepted_rate:
-            _scale_l = scale
-        else:
-            _scale_r = scale
+    scale = bisec_target(target_accepted_rate,
+                         (1e-10, 5),
+                         lambda scale: _measure_accepted_rate(
+                             order, threshold, ndim, min_beta, scale, seeder(), w),
+                         bisec_eps)
 
     # min_betaに対するscaleを使って、他のbetaに対してもscaleを決める仕組み
     def create_scaler(beta, scale): return lambda b: beta / b * scale
@@ -99,24 +117,16 @@ def experiment(datadir, order: opypy.Orders, threshold: float, ndim: int):
 
     # max_betaを超えるまで追加のbetaを二分探索で交換率を元に追加していく。
     betas = [min_beta]
-    scales = [scaler(min_beta)]
+    scales = [scaler(b) for b in betas]
     while betas[-1] < max_beta:
-        _beta_l, _beta_r = betas[-1], max_beta * 2
-        for _ in range(bisec_iteration):
-            print(f"{_beta_l:.6f} < - > {_beta_r:.6f}", flush=True)
-            beta = (_beta_l + _beta_r) / 2
-
-            exchange_rates = _measure_exchange_rate(
-                order, threshold, ndim,
-                betas + [beta],
-                scales + [scaler(beta)],
-                seeder(), w)
-
-            print(exchange_rates, flush=True)
-            if target_exchange_rate < exchange_rates[-1]:
-                _beta_l = beta
-            else:
-                _beta_r = beta
+        beta = bisec_target(target_exchange_rate,
+                            (betas[-1], max_beta * 2),
+                            lambda beta: _measure_exchange_rate(
+                                order, threshold, ndim,
+                                betas + [beta],
+                                scales + [scaler(beta)],
+                                seeder(), w)[-1],
+                            bisec_eps)
 
         betas.append(beta)
         scales.append(scaler(beta))

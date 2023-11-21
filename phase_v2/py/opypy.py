@@ -125,7 +125,7 @@ class RepricaMCMC:
             list[Optional[bool]]: None -> not try, true/false -> is_exchange_occurred
         """
         (target, occured) = self._.exchange()  # represented by bits
-        return [(occured & (1 << i)) if (target & (1 << i)) else None for i in range(self._num_reprica - 1)]
+        return [bool(occured & (1 << i)) if (target & (1 << i)) else None for i in range(self._num_reprica - 1)]
 
     def __getitem__(self, index: int) -> MCMC:
         return self._[index]

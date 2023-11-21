@@ -216,9 +216,9 @@ class RepricaMCMC {
     uint target = 0;
     uint occured = 0;
     for (int r = (c_exchange++ % 2); r + 1 < num_reprica; r += 2) {
-      target += uint(1) << r;
+      target |= uint(1) << r;
       if (mcmc_list[r].try_swap(mcmc_list[r + 1])) {
-        occured += (uint(1) << r);
+        occured |= (uint(1) << r);
       }
     }
 

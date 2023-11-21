@@ -8,6 +8,9 @@ import opypy
 import common
 
 
+pool = opypy.CppThreadPool(8)
+
+
 def _measure_accepted_rate(order: opypy.Orders,
                            threshold: float,
                            ndim: int,
@@ -47,12 +50,13 @@ def _measure_exchange_rate(order: opypy.Orders,
     stat = [[] for _ in range(M-1)]
 
     # Burn-In
-    mcmc_list.step(burn_in)
+    mcmc_list.step(pool, burn_in)
 
     # Sampling
-    for _ in range(num_exchange):
-        mcmc_list.step(exchange_interval)
+    for e in range(num_exchange):
+        mcmc_list.step(pool, exchange_interval)
 
+        print(f"try swap ({e}).", flush=True)
         exchange_res = mcmc_list.exchange()
         for (i, res) in filter(lambda x: x[1] is not None, enumerate(exchange_res)):
             stat[i].append(int(res))
@@ -155,11 +159,11 @@ def main():
     if not data.exists():
         data.mkdir()
 
-    experiment(data, "kuramoto", 0.8, 2)
-    experiment(data, "num_of_avg_freq_mode", 0.9, 2)
+    experiment(data, pool, "kuramoto", 0.8, 2)
+    experiment(data, pool, "num_of_avg_freq_mode", 0.9, 2)
 
-    experiment(data, "kuramoto", 0.8,  3)
-    experiment(data, "num_of_avg_freq_mode", 0.9,  3)
+    experiment(data, pool, "kuramoto", 0.8,  3)
+    experiment(data, pool, "num_of_avg_freq_mode", 0.9,  3)
 
 
 if __name__ == "__main__":

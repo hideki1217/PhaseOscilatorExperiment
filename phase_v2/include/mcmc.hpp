@@ -194,13 +194,13 @@ class RepricaMCMC {
   /**
    * ATTENTION: not async, you create multiple threads and join them.
    */
-  void step(int n = 1) {
+  void step(concurrent::ThreadPool &pool, int n = 1) {
     for (int r = 0; r < num_reprica; r++) {
-      concurrent::pool.post([this, r, n]() {
+      pool.post([this, r, n]() {
         for (int i = 0; i < n; i++) mcmc_list[r].step();
       });
     }
-    concurrent::pool.join();
+    pool.join();
   }
 
   struct ExchangeResult {

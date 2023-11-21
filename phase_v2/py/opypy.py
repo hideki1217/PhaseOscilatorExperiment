@@ -98,6 +98,11 @@ class MCMC:
         return self._.energy()
 
 
+class CppThreadPool:
+    def __init__(self, num_thread: int):
+        self.inner = opy.CppThreadPool(num_thread)
+
+
 class RepricaMCMC:
     def __init__(self, w, initial_K, threshold, betas, scales, seed, order: Orders = "kuramoto"):
         if order == "kuramoto":
@@ -115,8 +120,8 @@ class RepricaMCMC:
         self._c_exchange = 0
         self._num_reprica = len(betas)
 
-    def step(self, n: int):
-        self._.step(n)
+    def step(self, pool: CppThreadPool,  n: int):
+        self._.step(pool.inner, n)
 
     def exchange(self) -> list[Optional[bool]]:
         """_summary_

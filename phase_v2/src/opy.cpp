@@ -168,6 +168,8 @@ PYBIND11_MODULE(opy, m) {
   export_mcmc<order::RelativeKuramoto<Real>>(m, "RelativeKuramoto_MCMC");
   export_mcmc<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_MCMC");
 
+  py::class_<concurrent::ThreadPool>(m, "CppThreadPool").def(py::init<int>());
+
   export_reprica_mcmc<order::Kuramoto<Real>>(m, "Kuramoto_RepricaMCMC");
   export_reprica_mcmc<order::RelativeKuramoto<Real>>(
       m, "RelativeKuramoto_RepricaMCMC");

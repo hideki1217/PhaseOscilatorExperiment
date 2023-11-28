@@ -21,6 +21,7 @@ class Kuramoto {
 
  public:
   using V = Real;
+  static constexpr const char *name = "kuramoto";
 
   const int ndim;
   Kuramoto(int window, int ndim)
@@ -74,6 +75,7 @@ class RelativeKuramoto {
 
  public:
   using V = Real;
+  static constexpr const char *name = "relative_kuramoto";
 
   const int ndim;
   RelativeKuramoto(int window, int ndim)
@@ -125,6 +127,7 @@ class ZeroFreqRate {
 
  public:
   using V = Real;
+  static constexpr const char *name = "zero_freq_rate";
 
   const int ndim;
   ZeroFreqRate(int window, int ndim) : ndim(ndim), ratio_q(window, 0.) {}
@@ -163,6 +166,7 @@ class ZeroFreqMean {
 
  public:
   using V = Real;
+  static constexpr const char *name = "zero_freq_mean";
 
   const int ndim;
   ZeroFreqMean(int window, int ndim)
@@ -206,6 +210,7 @@ class NumOfAvgFreqMode {
 
  public:
   using V = Real;
+  static constexpr const char *name = "num_of_avg_freq_mode";
 
   const int ndim;
   NumOfAvgFreqMode(int window, int ndim)

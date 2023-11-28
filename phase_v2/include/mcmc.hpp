@@ -176,6 +176,7 @@ class BolzmanMarkovChain {
 template <typename Order>
 class RepricaMCMC {
   using Real = typename Order::V;
+  using MCMC = BolzmanMarkovChain<Order>;
 
  public:
   const int ndim;
@@ -186,8 +187,8 @@ class RepricaMCMC {
               int num_reprica, const Real *betas, const Real *scales, int seed)
       : ndim(ndim), threshold(threshold), num_reprica(num_reprica) {
     for (int i = 0; i < num_reprica; i++) {
-      mcmc_list.emplace_back(BolzmanMarkovChain<Order>(
-          ndim, w, K, threshold, betas[i], scales[i], seed + i));
+      mcmc_list.emplace_back(
+          MCMC(ndim, w, K, threshold, betas[i], scales[i], seed + i));
     }
   }
 
@@ -199,6 +200,16 @@ class RepricaMCMC {
       pool.post([this, r, n]() {
         for (int i = 0; i < n; i++) mcmc_list[r].step();
       });
+    }
+    pool.join();
+  }
+
+  template <typename F>
+  void map(concurrent::ThreadPool &pool, F f) {
+    static_assert(
+        std::is_same<std::invoke_result_t<F, int, MCMC &>, void>::value);
+    for (int r = 0; r < num_reprica; r++) {
+      pool.post([this, r, f]() { f(r, mcmc_list[r]); });
     }
     pool.join();
   }
@@ -225,14 +236,14 @@ class RepricaMCMC {
     return {target, occured};
   }
 
-  BolzmanMarkovChain<Order> &operator[](int index) {
+  MCMC &operator[](int index) {
     assert(0 <= index && index < num_reprica);
     return mcmc_list[index];
   }
 
  private:
   int c_exchange = 0;
-  std::vector<BolzmanMarkovChain<Order>> mcmc_list;
+  std::vector<MCMC> mcmc_list;
 };
 }  // namespace mcmc
 

@@ -85,17 +85,13 @@ def main():
     if not data.exists():
         data.mkdir()
 
-    experiment(data, Param(2, "kuramoto", 0.78), 500)
-    experiment(data, Param(2, "num_of_avg_freq_mode", 0.9), 500)
-    experiment(data, Param(2, "relative_kuramoto", 0.78), 500)
+    N_per_f = 300
 
-    experiment(data, Param(3, "kuramoto", 0.78), 750)
-    experiment(data, Param(3, "num_of_avg_freq_mode", 0.9), 750)
-    experiment(data, Param(3, "relative_kuramoto", 0.78), 750)
-
-    experiment(data, Param(4, "kuramoto", 0.78), 1000)
-    experiment(data, Param(4, "num_of_avg_freq_mode", 0.9), 1000)
-    experiment(data, Param(4, "relative_kuramoto", 0.78), 1000)
+    for ndim in range(2, 10):
+        r = N_per_f * (ndim * (ndim - 1)) // 2
+        experiment(data, Param(ndim, "kuramoto", 0.78), r)
+        experiment(data, Param(ndim, "num_of_avg_freq_mode", 0.9), r)
+        experiment(data, Param(ndim, "relative_kuramoto", 0.78), r)
 
 
 if __name__ == "__main__":

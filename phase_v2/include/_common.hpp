@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
@@ -36,3 +37,16 @@ void _worn(const char *pos, int row_id, const char *fmt, Args... args) {
 #define log_worn(...) _worn(__FILE__, __LINE__, __VA_ARGS__)
 
 #define eprintf(...) std::fprintf(stderr, __VA_ARGS__)
+
+namespace lib {
+namespace param {
+template <typename Real>
+void create_w(int ndim, Real *w) {
+  const Real x0 = 0, r = 1.0;
+  for (int i = 0; i < ndim; i++) {
+    const Real p = Real(i + 1) / (ndim + 1);
+    w[i] = x0 + r * std::tan(M_PI * (p - 0.5));
+  }
+}
+}  // namespace param
+}  // namespace lib

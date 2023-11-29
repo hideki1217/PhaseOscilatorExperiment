@@ -41,16 +41,16 @@ class OrderEvaluator {
    * Evaluate phase order parameter of a specified oscilator network
    * And return the status flag
    */
-  EvalStatus eval(const Real *K, const Real *w) noexcept {
+  EvalStatus eval(const Real *K, int Kstride, const Real *w) noexcept {
     std::memcpy(&s[0], &s_ini[0], ndim);
     Real t = 0;
     int iteration = 0;
 
     for (int i = 0; i < window * 2; i++) {
       const auto result =
-          sim_engine.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+          sim_engine.advance(sampling_dt, t, &s[0], &K[0], Kstride, &w[0]);
       t = result.t;
-      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+      sim::target_model(ndim, &K[0], Kstride, &w[0], t, &s[0], &ds_dt[0]);
       recorder_regist(&s[0], &ds_dt[0]);
     }
     iteration += window * 2;
@@ -62,9 +62,9 @@ class OrderEvaluator {
       iteration++;
 
       const auto result =
-          sim_engine.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+          sim_engine.advance(sampling_dt, t, &s[0], &K[0], Kstride, &w[0]);
       t = result.t;
-      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+      sim::target_model(ndim, &K[0], Kstride, &w[0], t, &s[0], &ds_dt[0]);
       recorder_regist(&s[0], &ds_dt[0]);
     }
 

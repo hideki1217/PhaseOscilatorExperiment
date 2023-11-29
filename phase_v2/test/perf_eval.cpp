@@ -21,7 +21,7 @@ int main() {
     for (int i = 0; i < m; i++) {
       const auto start = std::chrono::system_clock::now();
 
-      { model.eval(K.data(), w.data()); }
+      { model.eval(K.data(), ndim, w.data()); }
 
       ts_ms[i] = std::chrono::duration_cast<std::chrono::milliseconds>(
                      std::chrono::system_clock::now() - start)

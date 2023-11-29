@@ -22,7 +22,7 @@ void export_rk45(Module& m, const char* name) {
           [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
-            return model.eval(K.data(), w.data());
+            return model.eval(K.data(), model.ndim, w.data());
           },
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",
@@ -94,7 +94,7 @@ PYBIND11_MODULE(opy, m) {
           [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
-            return model.eval(K.data(), w.data());
+            return model.eval(K.data(), model.ndim, w.data());
           },
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",
@@ -119,7 +119,7 @@ PYBIND11_MODULE(opy, m) {
           [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
-            return model.eval(K.data(), w.data());
+            return model.eval(K.data(), model.ndim, w.data());
           },
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",
@@ -143,7 +143,7 @@ PYBIND11_MODULE(opy, m) {
           [](TARGET& model, py::array_t<Real> K, py::array_t<Real> w) {
             assert(model.ndim * model.ndim == K.size());
             assert(model.ndim == w.size());
-            return model.eval(K.data(), w.data());
+            return model.eval(K.data(), model.ndim, w.data());
           },
           "Evaluate phase order parameter of a specified oscilator "
           "network\nAnd return the status flag",

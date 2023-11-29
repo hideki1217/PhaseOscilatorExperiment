@@ -1,3 +1,4 @@
+#include <_common.hpp>
 #include <_concurrent.hpp>
 #include <algorithm>
 #include <cmath>
@@ -84,9 +85,10 @@ class BolzmanMarkovChain {
         threshold(threshold),
         beta(beta),
         scale(scale),
+        Kstride(ndim),                          // NOTE: aliged 32byte
         evaluator(3000, 1e-4, 1, 10000, ndim),  // NOTE: Default parameter
         w(new(std::align_val_t{64}) Real[ndim]),
-        K(new(std::align_val_t{64}) Real[ndim * ndim]),
+        K(new(std::align_val_t{64}) Real[ndim * Kstride]),
         _rng(seed) {
     for (int i = 0; i < ndim; i++) {
       for (int j = i + 1; j < ndim; j++) {
@@ -95,7 +97,11 @@ class BolzmanMarkovChain {
     }
 
     std::copy_n(w, ndim, &this->w[0]);
-    std::copy_n(K, ndim * ndim, &this->K[0]);
+    for (int i = 0; i < ndim; i++) {
+      for (int j = 0; j < ndim; j++) {
+        this->K[i * Kstride + j] = K[i * ndim + j];
+      }
+    }
 
     K_sum = 0;
     for (int i = 0; i < ndim * ndim; i++) K_sum += K[i];
@@ -143,7 +149,7 @@ class BolzmanMarkovChain {
       return Result::MinusConnection;
     }
 
-    const auto status = evaluator.eval(&K[0], &w[0]);
+    const auto status = evaluator.eval(&K[0], Kstride, &w[0]);
     if (status != EvalStatus::Ok) {
       return Result::NotConverged;
     }
@@ -166,6 +172,7 @@ class BolzmanMarkovChain {
   OrderEvaluatorRK45<Real, Order> evaluator;
 
   std::unique_ptr<Real[]> w;
+  const int Kstride;
   std::unique_ptr<Real[]> K;
   Real K_sum;
 

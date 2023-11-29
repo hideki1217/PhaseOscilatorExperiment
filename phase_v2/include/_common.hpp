@@ -1,3 +1,5 @@
+#pragma once
+
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -37,6 +39,13 @@ void _worn(const char *pos, int row_id, const char *fmt, Args... args) {
 #define log_worn(...) _worn(__FILE__, __LINE__, __VA_ARGS__)
 
 #define eprintf(...) std::fprintf(stderr, __VA_ARGS__)
+
+template <typename T, int alignment = 32>
+constexpr int aligned_stride(int min_size) {
+  static_assert(alignment % sizeof(T) == 0);
+  int c = alignment / sizeof(T);
+  return ((min_size + c - 1) / c) * c;
+}
 
 namespace lib {
 namespace param {

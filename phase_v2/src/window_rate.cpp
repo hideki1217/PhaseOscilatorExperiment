@@ -28,9 +28,9 @@ class OrderChain {
 
     for (int e = 0; e < iteration; e++) {
       for (int i = 0; i < window; i++) {
-        const auto result = sim_engine.advance(dt, t, &s[0], K, w);
+        const auto result = sim_engine.advance(dt, t, &s[0], K, ndim, w);
         t = result.t;
-        sim::target_model(ndim, K, w, t, &s[0], &ds_dt[0]);
+        sim::target_model(ndim, K, ndim, w, t, &s[0], &ds_dt[0]);
         avg.push(&s[0], &ds_dt[0]);
       }
 

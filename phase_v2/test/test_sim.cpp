@@ -24,30 +24,35 @@ void measure_time_2d(Real k) {
     auto rk45 = sim::FehlbergRK45<Real>(ndim, 1e-2, 1e0, 1e-3);
     TIMESTAT({
       for (int e = 0; e < 30000; e++) {
-        const auto result = rk45.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+        const auto result =
+            rk45.advance(sampling_dt, t, &s[0], &K[0], ndim, &w[0]);
         t = result.t;
-        sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+        sim::target_model(ndim, &K[0], ndim, &w[0], t, &s[0], &ds_dt[0]);
 
         avg.push(&s[0], &ds_dt[0]);
       }
       std::cout << avg.value() << std::endl;
     })
-    TIMESTAT({ rk45.advance(iteration * sampling_dt, t, &s[0], &K[0], &w[0]); })
+    TIMESTAT({
+      rk45.advance(iteration * sampling_dt, t, &s[0], &K[0], ndim, &w[0]);
+    })
   }
   {
     Real t = 0;
     auto rk4 = sim::RK4<Real>(ndim, 1e-2);
     TIMESTAT({
       for (int e = 0; e < 30000; e++) {
-        const auto result = rk4.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+        const auto result =
+            rk4.advance(sampling_dt, t, &s[0], &K[0], ndim, &w[0]);
         t = result.t;
-        sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+        sim::target_model(ndim, &K[0], ndim, &w[0], t, &s[0], &ds_dt[0]);
 
         avg.push(&s[0], &ds_dt[0]);
       }
       std::cout << avg.value() << std::endl;
     })
-    TIMESTAT({ rk4.advance(iteration * sampling_dt, t, &s[0], &K[0], &w[0]); })
+    TIMESTAT(
+        { rk4.advance(iteration * sampling_dt, t, &s[0], &K[0], ndim, &w[0]); })
   }
 }
 
@@ -74,9 +79,10 @@ void test_advance_2d(Real k, Real w0) {
   {
     Real t = 0;
     for (int e = 0; e < iteration; e++) {
-      const auto result = rk45.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+      const auto result =
+          rk45.advance(sampling_dt, t, &s[0], &K[0], ndim, &w[0]);
       t = result.t;
-      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+      sim::target_model(ndim, &K[0], ndim, &w[0], t, &s[0], &ds_dt[0]);
 
       avg.push(&s[0], &ds_dt[0]);
     }
@@ -89,9 +95,10 @@ void test_advance_2d(Real k, Real w0) {
   {
     Real t = 0;
     for (int e = 0; e < iteration; e++) {
-      const auto result = rk4.advance(sampling_dt, t, &s[0], &K[0], &w[0]);
+      const auto result =
+          rk4.advance(sampling_dt, t, &s[0], &K[0], ndim, &w[0]);
       t = result.t;
-      sim::target_model(ndim, &K[0], &w[0], t, &s[0], &ds_dt[0]);
+      sim::target_model(ndim, &K[0], ndim, &w[0], t, &s[0], &ds_dt[0]);
 
       avg.push(&s[0], &ds_dt[0]);
     }

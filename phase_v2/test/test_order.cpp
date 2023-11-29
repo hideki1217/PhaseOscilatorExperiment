@@ -10,7 +10,7 @@ template <typename Evaluator>
 double _test_2d(Evaluator& model_2d, double k, double w0) {
   std::vector<double> K = {0, k, k, 0};
   std::vector<double> w = {-w0, w0};
-  auto status = model_2d.eval(&K[0], &w[0]);
+  auto status = model_2d.eval(&K[0], 2, &w[0]);
   assert(status == lib::EvalStatus::Ok);
   return model_2d.result();
 }

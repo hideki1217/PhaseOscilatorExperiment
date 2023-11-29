@@ -16,15 +16,15 @@ namespace lib {
 namespace sim {
 
 template <typename Real>
-void target_model(int ndim, const Real *K, const Real *w, const Real t,
-                  const Real *s, Real *ds_dt) noexcept {
+void target_model(int ndim, const Real *K, int Kstride, const Real *w,
+                  const Real t, const Real *s, Real *ds_dt) noexcept {
   for (int i = 0; i < ndim; i++) {
     ds_dt[i] = w[i];
   }
 
   for (int i = 0; i < ndim; i++) {
     for (int j = 0; j < ndim; j++) {
-      ds_dt[i] += K[i * ndim + j] * std::sin(s[j] - s[i]);
+      ds_dt[i] += K[i * Kstride + j] * std::sin(s[j] - s[i]);
     }
   }
 }
@@ -32,8 +32,8 @@ void target_model(int ndim, const Real *K, const Real *w, const Real t,
 #ifdef SIM_AVX2
 
 template <>
-void target_model(int ndim, const double *K, const double *w, const double t,
-                  const double *s, double *ds_dt) noexcept {
+void target_model(int ndim, const double *K, int Kstride, const double *w,
+                  const double t, const double *s, double *ds_dt) noexcept {
   constexpr int simd_size = 4;
   const int simd_iteration = ndim / simd_size;
   const int remainder = ndim % simd_size;
@@ -44,7 +44,7 @@ void target_model(int ndim, const double *K, const double *w, const double t,
     for (int j = 0; j < ndim; j++) {
       __m256d sin_diff =
           _mm256_sin_pd(_mm256_sub_pd(_mm256_set1_pd(s[j]), s_i));
-      __m256d K_ = _mm256_load_pd(&K[j * ndim + i]);
+      __m256d K_ = _mm256_load_pd(&K[j * Kstride + i]);
       ds_dt_i = _mm256_add_pd(ds_dt_i, _mm256_mul_pd(K_, sin_diff));
     }
 
@@ -92,13 +92,13 @@ class RK4 {
         k3(new(std::align_val_t{64}) Real[ndim]),
         k4(new(std::align_val_t{64}) Real[ndim]) {}
 
-  Result advance(Real T, Real t, Real *s, const Real *K,
+  Result advance(Real T, Real t, Real *s, const Real *K, int Kstride,
                  const Real *w) noexcept {
     const Real t_max = t + T;
 
     while (t < t_max) {
       const Real h = (t + max_dt <= t_max) ? max_dt : t_max - t;
-      t = _advance_dt(h, t, s, K, w);
+      t = _advance_dt(h, t, s, K, Kstride, w);
     }
     assert(std::abs(t - t_max) < 1e-6);
 
@@ -107,17 +107,17 @@ class RK4 {
 
  private:
   Real _advance_dt(const Real dt, const Real t, Real *s, const Real *K,
-                   const Real *w) {
+                   int Kstride, const Real *w) {
     const Real dt_2 = dt * 0.5;
     const Real dt_6 = dt / 6;
 
-    target_model(ndim, K, w, t, s, &k1[0]);
+    target_model(ndim, K, Kstride, w, t, s, &k1[0]);
     sumofp(ndim, &_s[0], s, dt_2, &k1[0]);
-    target_model(ndim, K, w, t + dt_2, &_s[0], &k2[0]);
+    target_model(ndim, K, Kstride, w, t + dt_2, &_s[0], &k2[0]);
     sumofp(ndim, &_s[0], s, dt_2, &k2[0]);
-    target_model(ndim, K, w, t + dt_2, &_s[0], &k3[0]);
+    target_model(ndim, K, Kstride, w, t + dt_2, &_s[0], &k3[0]);
     sumofp(ndim, &_s[0], s, dt, &k3[0]);
-    target_model(ndim, K, w, t + dt, &_s[0], &k4[0]);
+    target_model(ndim, K, Kstride, w, t + dt, &_s[0], &k4[0]);
     sumofp(ndim, s, s, dt_6, &k1[0], dt_6 * 2, &k2[0], dt_6 * 2, &k3[0], dt_6,
            &k4[0]);
 
@@ -157,7 +157,7 @@ class FehlbergRK45 {
   /**
    * advance T time from (t, s) on the model.
    */
-  Result advance(Real T, Real t, Real *s, const Real *K,
+  Result advance(Real T, Real t, Real *s, const Real *K, int Kstride,
                  const Real *w) noexcept {
     const Real t_max = t + T;
     h = first_h;
@@ -165,7 +165,7 @@ class FehlbergRK45 {
     int iteration = 0;
     while (t + min_h < t_max) {
       iteration++;
-      const auto h = try_advance(t, s, K, w, t_max);
+      const auto h = try_advance(t, s, K, Kstride, w, t_max);
       if (h > 0) {
         t += h;
       }
@@ -176,7 +176,8 @@ class FehlbergRK45 {
 
  private:
   Real norm(int size, const Real *v) { return *std::max_element(v, v + size); }
-  Real try_advance(Real t, Real *s, const Real *K, const Real *w, Real t_max) {
+  Real try_advance(Real t, Real *s, const Real *K, int Kstride, const Real *w,
+                   Real t_max) {
     /**
      * reference: https://slpr.sakura.ne.jp/qp/runge-kutta-ex/#rkf45hauto
      */
@@ -221,25 +222,25 @@ class FehlbergRK45 {
     static constexpr Real d_2 = 2197. / 4104;
     static constexpr Real d_3 = -1. / 5;
 
-    target_model(ndim, K, w, t, s, &k0[0]);
+    target_model(ndim, K, Kstride, w, t, s, &k0[0]);
 
     sumofp(ndim, &tmp[0], s, h * a_00, &k0[0]);
-    target_model(ndim, K, w, t + c_0 * h, &tmp[0], &k1[0]);
+    target_model(ndim, K, Kstride, w, t + c_0 * h, &tmp[0], &k1[0]);
 
     sumofp(ndim, &tmp[0], s, h * a_10, &k0[0], h * a_11, &k1[0]);
-    target_model(ndim, K, w, t + c_1 * h, &tmp[0], &k2[0]);
+    target_model(ndim, K, Kstride, w, t + c_1 * h, &tmp[0], &k2[0]);
 
     sumofp(ndim, &tmp[0], s, h * a_20, &k0[0], h * a_21, &k1[0], h * a_22,
            &k2[0]);
-    target_model(ndim, K, w, t + c_2 * h, &tmp[0], &k3[0]);
+    target_model(ndim, K, Kstride, w, t + c_2 * h, &tmp[0], &k3[0]);
 
     sumofp(ndim, &tmp[0], s, h * a_30, &k0[0], h * a_31, &k1[0], h * a_32,
            &k2[0], h * a_33, &k3[0]);
-    target_model(ndim, K, w, t + c_3 * h, &tmp[0], &k4[0]);
+    target_model(ndim, K, Kstride, w, t + c_3 * h, &tmp[0], &k4[0]);
 
     sumofp(ndim, &tmp[0], s, h * a_40, &k0[0], h * a_41, &k1[0], h * a_42,
            &k2[0], h * a_43, &k3[0], h * a_44, &k4[0]);
-    target_model(ndim, K, w, t + c_4 * h, &tmp[0], &k5[0]);
+    target_model(ndim, K, Kstride, w, t + c_4 * h, &tmp[0], &k5[0]);
 
     sumofp(ndim, &tmp[0], b_0, &k0[0], b_1, &k2[0], b_2, &k3[0], b_3, &k4[0],
            b_4, &k5[0]);

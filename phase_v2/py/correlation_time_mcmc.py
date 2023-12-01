@@ -91,7 +91,7 @@ def main():
         r = N_per_f * (ndim * (ndim - 1)) // 2
         experiment(data, Param(ndim, "kuramoto", 0.78), r)
         experiment(data, Param(ndim, "num_of_avg_freq_mode", 0.9), r)
-        experiment(data, Param(ndim, "relative_kuramoto", 0.78), r)
+        # experiment(data, Param(ndim, "relative_kuramoto", 0.78), r)
 
 
 if __name__ == "__main__":

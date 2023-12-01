@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <collection.hpp>
+#include <limits>
 #include <valarray>
 
 namespace lib {
@@ -230,12 +231,58 @@ class NumOfAvgFreqMode {
     auto freq_means = freq_q.mean();
 
     std::sort(std::begin(freq_means), std::end(freq_means));
-    Real r = 0, prev = -1e10;
+    Real r = 0, prev = std::numeric_limits<Real>::lowest();
     for (auto freq : freq_means) {
       if (freq - prev > eps) r += 1;
       prev = freq;
     }
     r = (ndim - r) / (ndim - 1);
+
+    return r;
+  }
+
+ private:
+  collection::FixedQueue<std::valarray<Real>> freq_q;
+};
+
+template <typename Real>
+class MaxAvgFreqCluster {
+  struct Unit {
+    std::valarray<Real> freq;
+  };
+
+ public:
+  using V = Real;
+  static constexpr const char *name = "max_avg_freq_cluster";
+
+  const int ndim;
+  MaxAvgFreqCluster(int window, int ndim)
+      : ndim(ndim), freq_q(window, std::valarray<Real>(Real(0), ndim)) {}
+
+  Unit push(const Real *s, const Real *ds_dt) noexcept {
+    return push({std::valarray<Real>(ds_dt, ndim)});
+  }
+
+  Unit push(const Unit inner) noexcept {
+    const auto freq = freq_q.push(inner.freq);
+    return {freq};
+  }
+
+  Real value() const noexcept {
+    static const Real eps = 1e-2;
+    auto freq_means = freq_q.mean();
+
+    std::sort(std::begin(freq_means), std::end(freq_means));
+    Real r = 1, c = 1, prev = std::numeric_limits<Real>::lowest();
+    for (auto freq : freq_means) {
+      if (freq - prev < eps) {
+        r = std::max(r, ++c);
+      } else {
+        c = 1;
+      }
+      prev = freq;
+    }
+    r = (r - 1) / (ndim - 1);
 
     return r;
   }

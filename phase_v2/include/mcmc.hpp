@@ -85,9 +85,9 @@ class BolzmanMarkovChain {
         threshold(threshold),
         beta(beta),
         scale(scale),
-        Kstride(ndim),                          // NOTE: aliged 32byte
         evaluator(3000, 1e-4, 1, 10000, ndim),  // NOTE: Default parameter
         w(new(std::align_val_t{64}) Real[ndim]),
+        Kstride(ndim),
         K(new(std::align_val_t{64}) Real[ndim * Kstride]),
         _rng(seed) {
     for (int i = 0; i < ndim; i++) {

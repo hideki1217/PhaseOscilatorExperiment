@@ -163,10 +163,12 @@ PYBIND11_MODULE(opy, m) {
   export_rk45<order::RelativeKuramoto<Real>>(m,
                                              "RelativeKuramotoEvaluatorRK45");
   export_rk45<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_RK45");
+  export_rk45<order::MaxAvgFreqCluster<Real>>(m, "MaxAvgFreqCluster_RK45");
 
   export_mcmc<order::Kuramoto<Real>>(m, "Kuramoto_MCMC");
   export_mcmc<order::RelativeKuramoto<Real>>(m, "RelativeKuramoto_MCMC");
   export_mcmc<order::NumOfAvgFreqMode<Real>>(m, "NumOfAvgFreqMode_MCMC");
+  export_mcmc<order::MaxAvgFreqCluster<Real>>(m, "MaxAvgFreqCluster_MCMC");
 
   py::class_<concurrent::ThreadPool>(m, "CppThreadPool").def(py::init<int>());
 
@@ -175,4 +177,6 @@ PYBIND11_MODULE(opy, m) {
       m, "RelativeKuramoto_RepricaMCMC");
   export_reprica_mcmc<order::NumOfAvgFreqMode<Real>>(
       m, "NumOfAvgFreqMode_RepricaMCMC");
+  export_reprica_mcmc<order::MaxAvgFreqCluster<Real>>(
+      m, "MaxAvgFreqCluster_RepricaMCMC");
 }

@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import enum
 
 Orders = Literal["freq_rate0", "kuramoto", "freq_mean0",
-                 "relative_kuramoto", "num_of_avg_freq_mode"]
+                 "relative_kuramoto", "num_of_avg_freq_mode", "max_avg_freq_cluster"]
 
 
 class OrderEvaluator:
@@ -46,6 +46,9 @@ class OrderEvaluator:
             elif order == "num_of_avg_freq_mode":
                 self._ = opy.NumOfAvgFreqMode_RK45(
                     window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
+            elif order == "max_avg_freq_cluster":
+                self._ = opy.MaxAvgFreqCluster_RK45(
+                    window, epsilon, sampling_dt, max_iteration, ndim, start_dt=0.01, max_dt=1.0, atol=1e-3)
             else:
                 raise NotImplementedError
 
@@ -80,6 +83,9 @@ class MCMC:
         elif order == "num_of_avg_freq_mode":
             self._ = opy.NumOfAvgFreqMode_MCMC(np.array(w), np.array(
                 initial_K), threshold, beta, scale, seed)
+        elif order == "max_avg_freq_cluster":
+            self._ = opy.MaxAvgFreqCluster_MCMC(np.array(w), np.array(
+                initial_K), threshold, beta, scale, seed)
         else:
             raise NotImplementedError()
 
@@ -113,6 +119,9 @@ class RepricaMCMC:
                 initial_K), threshold, np.array(betas), np.array(scales),  seed)
         elif order == "num_of_avg_freq_mode":
             self._ = opy.NumOfAvgFreqMode_RepricaMCMC(np.array(w), np.array(
+                initial_K), threshold, np.array(betas), np.array(scales), seed)
+        elif order == "max_avg_freq_cluster":
+            self._ = opy.MaxAvgFreqCluster_RepricaMCMC(np.array(w), np.array(
                 initial_K), threshold, np.array(betas), np.array(scales), seed)
         else:
             raise NotImplementedError()

@@ -39,6 +39,7 @@ target_link_libraries(perf_eval PRIVATE lib)
 target_link_options(perf_eval PRIVATE -pg)
 target_compile_options(perf_eval PRIVATE -pg -qopt-report)
 
+add_subdirectory(topics)
 
 set(PYTHON_EXECUTABLE /${CMAKE_CURRENT_SOURCE_DIR}/venv/bin/python)
 add_subdirectory(pybind11)

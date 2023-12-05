@@ -34,6 +34,8 @@ void target_model(int ndim, const Real *K, int Kstride, const Real *w,
 template <>
 void target_model(int ndim, const double *K, int Kstride, const double *w,
                   const double t, const double *s, double *ds_dt) noexcept {
+  assert(K[0 * Kstride + 1] == K[1 * Kstride + 0]);
+
   constexpr int simd_size = 4;
   const int simd_iteration = ndim / simd_size;
   const int remainder = ndim % simd_size;

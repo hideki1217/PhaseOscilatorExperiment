@@ -1,9 +1,9 @@
 #include <cassert>
-#include <collection.hpp>
+#include <new_collection.hpp>
 #include <vector>
 
 void test_FixedQueue() {
-  auto q = lib::collection::FixedQueue<int>(3, 0);
+  auto q = new_lib::collection::FixedQueue<int>(3, 0);
   assert(q.sum() == 0);
   assert(q.size() == 3);
 

@@ -1,17 +1,15 @@
 #include <_common.hpp>
-#include <_concurrent.hpp>
 #include <iostream>
-#include <mcmc.hpp>
-#include <order.hpp>
+#include <new_lib.hpp>
 #include <random>
 
-using namespace lib;
+using namespace new_lib;
 
 template <typename Order>
 struct Param {
   using target_t = Order;
+  static constexpr int ndim = Order::system_t::ndim;
 
-  const int ndim;
   const double* w;
   const double* K;
   const double threshold;
@@ -31,7 +29,7 @@ struct Result {
   std::vector<double> exchange_rates;
 };
 
-lib::concurrent::ThreadPool thread_pool(8);
+concurrent::ThreadPool thread_pool(8);
 
 template <typename target_t>
 Result reprica_exchange(const Param<target_t> p) {
@@ -40,8 +38,8 @@ Result reprica_exchange(const Param<target_t> p) {
   std::vector<int> count_total(p.num_reprica - 1, 0);
   std::vector<int> count_accepted(p.num_reprica - 1, 0);
 
-  mcmc::RepricaMCMC<target_t> mcmc_list(
-      p.ndim, p.w, p.K, p.threshold, p.num_reprica, p.betas, p.scales, rng());
+  mcmc::RepricaMCMC<target_t> mcmc_list(p.w, p.K, p.threshold, p.num_reprica,
+                                        p.betas, p.scales, rng());
 
   // Burn-in
   mcmc_list.step(thread_pool, p.burn_in);
@@ -67,8 +65,9 @@ Result reprica_exchange(const Param<target_t> p) {
 }
 
 int main() {
-  using target_t = order::Kuramoto<double>;
-  const int ndim = 2;
+  constexpr int ndim = 2;
+  using target_t = order::Kuramoto<system::System<ndim>>;
+
   const double w[] = {-1, 1};
   const double K[] = {0, 5, 5, 0};
   const double threshold = 0.78;
@@ -93,7 +92,7 @@ int main() {
       scale = (scale_r + scale_l) / 2;
 
       auto stat = utils::Statistics(mcmc::Result::LENGTH);
-      auto markov = mcmc::BolzmanMarkovChain<target_t>(ndim, w, K, threshold,
+      auto markov = mcmc::BolzmanMarkovChain<target_t>(w, K, threshold,
                                                        min_beta, scale, 42);
       for (int i = 0; i < burn_in; i++) markov.step();  // Burn-In
       for (int i = 0; i < 1000; i++) stat.push(markov.step());
@@ -131,16 +130,10 @@ int main() {
         betas.push_back(beta);
         scales.push_back(min_beta / beta * scale);
         // betasでレプリカ交換法
-        Param<target_t> param = {ndim,
-                                 w,
-                                 K,
-                                 threshold,
-                                 static_cast<int>(betas.size()),
-                                 &betas[0],
-                                 &scales[0],
-                                 burn_in,
-                                 10,
-                                 10};
+        Param<target_t> param = {
+            w,         K,          threshold, static_cast<int>(betas.size()),
+            &betas[0], &scales[0], burn_in,   10,
+            10};
         result = reprica_exchange(param);
         betas.pop_back();
         scales.pop_back();

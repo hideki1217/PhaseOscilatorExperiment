@@ -5,6 +5,7 @@
 #include <cmath>
 #include <new_collection.hpp>
 #include <new_system.hpp>
+#include <valarray>
 
 using namespace boost::numeric;
 
@@ -45,7 +46,6 @@ class Evaluator {
   EvalStatus eval(const real_t* K, int Kstride, const real_t* w) noexcept {
     int iteration = 0;
 
-    real_t t = 0;
     system_t system(K, Kstride, w);
     std::copy(initial_x.begin(), initial_x.end(), x.begin());
 

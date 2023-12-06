@@ -46,16 +46,3 @@ constexpr int aligned_stride(int min_size) {
   int c = alignment / sizeof(T);
   return ((min_size + c - 1) / c) * c;
 }
-
-namespace lib {
-namespace param {
-template <typename Real>
-void create_w(int ndim, Real *w) {
-  const Real x0 = 0, r = 1.0;
-  for (int i = 0; i < ndim; i++) {
-    const Real p = Real(i + 1) / (ndim + 1);
-    w[i] = x0 + r * std::tan(M_PI * (p - 0.5));
-  }
-}
-}  // namespace param
-}  // namespace lib

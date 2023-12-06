@@ -45,7 +45,6 @@ function(create_mytest TEST_NAME)
 endfunction()
 create_mytest(test_order)
 create_mytest(test_collection)
-create_mytest(test_sim)
 
 add_executable(perf_eval ${CMAKE_CURRENT_SOURCE_DIR}/test/perf_eval.cpp)
 target_link_libraries(perf_eval PRIVATE lib)

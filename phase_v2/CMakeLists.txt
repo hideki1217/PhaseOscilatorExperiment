@@ -19,11 +19,23 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
   add_definitions(-DMATH_AVX2)
 endif()
 
+# External library
+add_library(json INTERFACE)
+target_include_directories(json INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/json/single_include)
+
+add_library(boost INTERFACE)
+target_include_directories(boost INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/boost_1_83_0)
+target_compile_options(boost INTERFACE "-Wno-tautological-constant-compare")
+# End
+
 add_library(lib INTERFACE)
 target_include_directories(lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(sample_mcmc ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_mcmc.cpp)
 target_link_libraries(sample_mcmc PRIVATE lib)
+
+add_executable(vs ${CMAKE_CURRENT_SOURCE_DIR}/src/vs.cpp)
+target_link_libraries(vs PRIVATE lib boost)
 
 function(create_mytest TEST_NAME)
   add_executable(${TEST_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/test/${TEST_NAME}.cpp)

@@ -1,6 +1,8 @@
 venv/
 
 pybind11/
+json/
+boost_1_83_0/
 
 *.log
 *.png

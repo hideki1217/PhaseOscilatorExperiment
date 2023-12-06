@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-import opypy
+import newopy
 
 
-def experiment(datadir, order):
+def experiment(datadir, order: newopy.Orders):
     datadir = datadir / str(order)
     if not datadir.exists():
         datadir.mkdir()
@@ -14,7 +14,7 @@ def experiment(datadir, order):
 
     ndim = 3
     w = np.array([-1, 0, 1])
-    model = opypy.OrderEvaluator.default(ndim, order=order)
+    model = newopy.OrderEvaluator.default(ndim, order=order)
 
     def f(K1, K2, K3, w):
         K_ = np.array([0, K1, K2,
@@ -63,10 +63,7 @@ def main():
         data.mkdir()
 
     experiment(data, "kuramoto")
-    experiment(data, "relative_kuramoto")
-    experiment(data, "freq_mean0")
-    experiment(data, "freq_rate0")
-    experiment(data, "num_of_avg_freq_mode")
+    experiment(data, "max_avg_freq_cluster")
 
 
 if __name__ == "__main__":

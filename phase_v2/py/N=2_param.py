@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import time
 
-import opypy
+import newopy
 
 
 def main():
@@ -22,8 +22,8 @@ def main():
         ndim = 2
         w = np.array([-w, w])
         K_ = np.array([0, K, K, 0])
-        model = opypy.OrderEvaluator(
-            window=window, epsilon=epsilon, sampling_dt=sampling_dt, max_iteration=int(window*max_p), ndim=ndim, method='rk45')
+        model = newopy.OrderEvaluator(
+            window=window, epsilon=epsilon, Dt=sampling_dt, max_iter=int(window*max_p), ndim=ndim)
 
         status = model.eval(K_, w)
 

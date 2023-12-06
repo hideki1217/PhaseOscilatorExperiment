@@ -5,14 +5,14 @@ import dataclasses
 import json
 import hashlib
 
-import opypy
+import newopy
 import common
 
 
 @dataclasses.dataclass
 class Param:
     ndim: int
-    order: opypy.Orders
+    order: newopy.Orders
     threshold: float
     scale: float = 1.19
     beta: float = 1.0
@@ -44,7 +44,7 @@ def experiment(datadir: Path, p: Param, MaxWindow: int):
     if sampled_K_file.exists():
         K_list = np.load(sampled_K_file)
     else:
-        mcmc = opypy.MCMC(w, K, p.threshold, p.beta, p.scale, p.seed, p.order)
+        mcmc = newopy.MCMC(w, K, p.threshold, p.beta, p.scale, p.seed, p.order)
         print("Start: Burn-in")
         for _ in range(BurnIn):
             mcmc.step()
@@ -90,8 +90,7 @@ def main():
     for ndim in range(2, 10):
         r = N_per_f * (ndim * (ndim - 1)) // 2
         experiment(data, Param(ndim, "kuramoto", 0.78), r)
-        experiment(data, Param(ndim, "num_of_avg_freq_mode", 0.9), r)
-        # experiment(data, Param(ndim, "relative_kuramoto", 0.78), r)
+        experiment(data, Param(ndim, "max_avg_freq_cluster", 0.9), r)
 
 
 if __name__ == "__main__":

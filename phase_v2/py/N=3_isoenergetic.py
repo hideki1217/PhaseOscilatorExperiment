@@ -1,12 +1,12 @@
 # NOTE: https://qiita.com/JuvenileTalk9/items/e857b9a62b447cc725e3　を元にcv2を自前ビルド
 import cv2
-import opypy
+import newopy
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-def experiment(data, order):
+def experiment(data, order: newopy.Orders):
     data = data / str(order)
     if not data.exists():
         data.mkdir()
@@ -15,7 +15,7 @@ def experiment(data, order):
 
     ndim = 3
     w = np.array([-1, 0, 1.])
-    model = opypy.OrderEvaluator.default(ndim, order=order)
+    model = newopy.OrderEvaluator.default(ndim, order=order)
 
     def f(K1, K2, K3, w):
         K_ = np.array([0, K1, K2,
@@ -75,10 +75,7 @@ def main():
         data.mkdir()
 
     experiment(data, "kuramoto")
-    experiment(data, "relative_kuramoto")
-    experiment(data, "freq_mean0")
-    experiment(data, "freq_rate0")
-    experiment(data, "num_of_avg_freq_mode")
+    experiment(data, "max_avg_freq_cluster")
 
 
 if __name__ == "__main__":

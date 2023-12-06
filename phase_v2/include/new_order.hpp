@@ -36,7 +36,7 @@ class Evaluator {
         Dt(Dt),
         max_iter(max_iter),
         stepper(odeint::make_controlled<odeint::runge_kutta_dopri5<state_t>>(
-            0.0001, 0.0001)),
+            1e-4, 1e-6)),
         avg_new(window),
         avg_old(window) {
     // HACK: hard coding

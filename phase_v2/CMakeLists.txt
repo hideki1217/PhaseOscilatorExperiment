@@ -30,6 +30,7 @@ target_compile_options(boost INTERFACE "-Wno-tautological-constant-compare")
 
 add_library(lib INTERFACE)
 target_include_directories(lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(lib INTERFACE boost)
 
 add_executable(sample_mcmc ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_mcmc.cpp)
 target_link_libraries(sample_mcmc PRIVATE lib)

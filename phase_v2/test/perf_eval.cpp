@@ -36,8 +36,6 @@ void experiment(int m = 500) {
 }
 
 int main() {
-  const int m = 500;
-
   experiment<2>();
   experiment<3>();
   experiment<4>();

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <new_collection.hpp>
 #include <new_system.hpp>
+#include <random>
 #include <valarray>
 
 using namespace boost::numeric;
@@ -40,14 +41,15 @@ class Evaluator {
         avg_new(window),
         avg_old(window) {
     // HACK: hard coding
-    std::fill_n(&initial_x[0], ndim, static_cast<real_t>(0));
+    std::mt19937 rng(10);
+    std::uniform_real_distribution<> unif(0, static_cast<real_t>(M_PI));
+    for (int i = 0; i < ndim; i++) x[i] = unif(rng);
   }
 
   EvalStatus eval(const real_t* K, int Kstride, const real_t* w) noexcept {
     int iteration = 0;
 
     system_t system(K, Kstride, w);
-    std::copy(initial_x.begin(), initial_x.end(), x.begin());
 
     for (int i = 0; i < window * 2; i++) {
       odeint::integrate_const(stepper, system, x, 0.0, Dt, Dt);
@@ -94,7 +96,6 @@ class Evaluator {
 
   state_t x;
   state_t dx;
-  state_t initial_x;
 };
 
 template <typename System>

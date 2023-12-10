@@ -39,17 +39,13 @@ class Evaluator {
         stepper(odeint::make_controlled<odeint::runge_kutta_dopri5<state_t>>(
             1e-4, 1e-6)),
         avg_new(window),
-        avg_old(window) {
-    // HACK: hard coding
-    std::mt19937 rng(10);
-    std::uniform_real_distribution<> unif(0, static_cast<real_t>(M_PI));
-    for (int i = 0; i < ndim; i++) x[i] = unif(rng);
-  }
+        avg_old(window) {}
 
   EvalStatus eval(const real_t* K, int Kstride, const real_t* w) noexcept {
     int iteration = 0;
 
     system_t system(K, Kstride, w);
+    std::fill(x.begin(), x.end(), static_cast<real_t>(0));  // HACK: hard coding
 
     for (int i = 0; i < window * 2; i++) {
       odeint::integrate_const(stepper, system, x, 0.0, Dt, Dt);

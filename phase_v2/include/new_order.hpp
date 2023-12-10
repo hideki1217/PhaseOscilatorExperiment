@@ -80,7 +80,8 @@ class Evaluator {
   }
 
   void recorder_regist(const state_t& x, const state_t& dx) {
-    avg_old.push(avg_new.push(x, dx));
+    avg_old.push(avg_new.first());
+    avg_new.push(x, dx);
   }
 
  private:
@@ -103,17 +104,15 @@ class Kuramoto {
   static constexpr int ndim = System::ndim;
   static constexpr const char* name = "kuramoto";
 
-  struct Unit {
-    real_t cos;
-    real_t sin;
-
-    Unit(real_t cos, real_t sin) : cos(cos), sin(sin) {}
+  struct UnitRef {
+    const real_t cos;
+    const real_t sin;
   };
 
  public:
   Kuramoto(int window) : cos_q(window, 0.), sin_q(window, 0.) {}
 
-  Unit push(const state_t& x, const state_t& dx) noexcept {
+  void push(const state_t& x, const state_t& dx) noexcept {
     real_t cos_mean = 0;
     for (int i = 0; i < ndim; i++) {
       cos_mean += std::cos(x[i]);
@@ -126,18 +125,19 @@ class Kuramoto {
     }
     sin_mean /= ndim;
 
-    return push({cos_mean, sin_mean});
+    push({cos_mean, sin_mean});
   }
 
-  Unit push(const Unit inner) noexcept {
-    auto cos_pop = cos_q.push(inner.cos);
-    auto sin_pop = sin_q.push(inner.sin);
-    return Unit(cos_pop, sin_pop);
+  void push(const UnitRef inner) noexcept {
+    cos_q.push(inner.cos);
+    sin_q.push(inner.sin);
   }
+
+  UnitRef first() noexcept { return {cos_q.first(), sin_q.first()}; }
 
   real_t value() const noexcept {
-    auto cos_mean = cos_q.mean();
-    auto sin_mean = sin_q.mean();
+    const auto cos_mean = cos_q.mean();
+    const auto sin_mean = sin_q.mean();
     const auto R_new = std::sqrt(cos_mean * cos_mean + sin_mean * sin_mean);
     return R_new;
   }
@@ -156,26 +156,24 @@ class MaxAvgFreqCluster {
   static constexpr int ndim = System::ndim;
   static constexpr const char* name = "max_avg_freq_cluster";
 
-  struct Unit {
-    std::valarray<real_t> freq;
+  struct UnitRef {
+    const std::valarray<real_t>& freq;
   };
 
  public:
-  MaxAvgFreqCluster(int window)
-      : freq_q(window, std::valarray<real_t>(real_t(0), ndim)) {}
+  MaxAvgFreqCluster(int window) : freq_q(window) {}
 
-  Unit push(const state_t& x, const state_t& dx) noexcept {
-    return push({std::valarray<real_t>(&dx[0], ndim)});
+  void push(const state_t& x, const state_t& dx) noexcept {
+    return freq_q.push(&dx[0]);
   }
 
-  Unit push(const Unit inner) noexcept {
-    const auto freq = freq_q.push(inner.freq);
-    return {freq};
-  }
+  void push(const UnitRef inner) noexcept { freq_q.push(&inner.freq[0]); }
+
+  UnitRef first() { return {freq_q.first()}; }
 
   real_t value() const noexcept {
     static const real_t eps = 1e-2;
-    auto freq_means = freq_q.mean();
+    auto freq_means = std::valarray(freq_q.sum() / freq_q.size());
 
     std::sort(std::begin(freq_means), std::end(freq_means));
     real_t r = 1, c = 1, prev = std::numeric_limits<real_t>::lowest();
@@ -193,7 +191,7 @@ class MaxAvgFreqCluster {
   }
 
  private:
-  collection::FixedQueue<std::valarray<real_t>> freq_q;
+  collection::FixedQueueVec<real_t, ndim> freq_q;
 };
 }  // namespace order
 }  // namespace new_lib

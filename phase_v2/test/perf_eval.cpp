@@ -7,11 +7,10 @@
 
 using namespace new_lib;
 
-template <int ndim>
+template <typename target_t>
 void experiment(int m = 500) {
-  auto evaluator = new_lib::order::Evaluator<
-      new_lib::order::Kuramoto<new_lib::system::System<ndim>>>(3000, 1e-4, 1,
-                                                               10000);
+  constexpr int ndim = target_t::ndim;
+  auto evaluator = new_lib::order::Evaluator<target_t>(3000, 1e-4, 1, 10000);
   std::vector<double> K(ndim * ndim, 0.9);
   for (int i = 0; i < ndim; i++) K[i * ndim + i] = 0;
   std::vector<double> w(ndim);
@@ -36,19 +35,27 @@ void experiment(int m = 500) {
 }
 
 int main() {
-  experiment<2>();
-  experiment<3>();
-  experiment<4>();
-  experiment<5>();
-  experiment<6>();
-  experiment<7>();
-  experiment<8>();
-  experiment<9>();
-  experiment<10>();
-  experiment<11>();
-  experiment<12>();
-  experiment<13>();
-  experiment<14>();
-  experiment<15>();
-  experiment<16>();
+  experiment<order::MaxAvgFreqCluster<system::System<2>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<3>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<4>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<5>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<6>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<7>>>();
+  experiment<order::MaxAvgFreqCluster<system::System<8>>>();
+
+  experiment<order::Kuramoto<system::System<2>>>();
+  experiment<order::Kuramoto<system::System<3>>>();
+  experiment<order::Kuramoto<system::System<4>>>();
+  experiment<order::Kuramoto<system::System<5>>>();
+  experiment<order::Kuramoto<system::System<6>>>();
+  experiment<order::Kuramoto<system::System<7>>>();
+  experiment<order::Kuramoto<system::System<8>>>();
+  // experiment<order::Kuramoto<system::System<9>>>();
+  // experiment<order::Kuramoto<system::System<10>>>();
+  // experiment<order::Kuramoto<system::System<11>>>();
+  // experiment<order::Kuramoto<system::System<12>>>();
+  // experiment<order::Kuramoto<system::System<13>>>();
+  // experiment<order::Kuramoto<system::System<14>>>();
+  // experiment<order::Kuramoto<system::System<15>>>();
+  // experiment<order::Kuramoto<system::System<16>>>();
 }

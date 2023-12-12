@@ -11,6 +11,50 @@
 using namespace boost::numeric;
 
 namespace new_lib {
+namespace initialize {
+template <typename state_t>
+class Nope {
+  void operator()(state_t& x) {}
+};
+template <typename state_t>
+class Const {
+  using real_t = typename state_t::value_type;
+
+ public:
+  const real_t v;
+
+ public:
+  Const(real_t v = static_cast<real_t>(0)) : v(v) {}
+
+  void operator()(state_t& x) { std::fill(x.begin(), x.end(), v); }
+};
+template <typename state_t>
+class RegularPolygon {
+  using real_t = typename state_t::value_type;
+  static const int ndim = std::tuple_size<state_t>::value;
+
+ public:
+  void operator()(real_t* x) {
+    const real_t delta_x = (2 * M_PI) / ndim;
+    const real_t x0 = M_PI - delta_x / 2;
+    for (int i = 0; i < ndim; i++) x[i] = x0 + i * delta_x;
+  }
+};
+template <typename state_t>
+class Random {
+  using real_t = typename state_t::value_type;
+
+ public:
+  std::mt19937 rng;
+  std::normal_distribution<real_t> normal;
+  Random(int seed) : rng(seed), normal(0.0, M_PI / 4) {}
+
+  void operator()(state_t& x) {
+    for (auto& x_i : x) x_i = normal(rng);
+  }
+};
+}  // namespace initialize
+
 namespace order {
 enum EvalStatus {
   Ok = 0,
@@ -39,13 +83,14 @@ class Evaluator {
         stepper(odeint::make_controlled<odeint::runge_kutta_dopri5<state_t>>(
             1e-4, 1e-6)),
         avg_new(window),
-        avg_old(window) {}
+        avg_old(window),
+        initer(static_cast<real_t>(0)) {}
 
   EvalStatus eval(const real_t* K, int Kstride, const real_t* w) noexcept {
     int iteration = 0;
 
     system_t system(K, Kstride, w);
-    std::fill(x.begin(), x.end(), static_cast<real_t>(0));  // HACK: hard coding
+    initer(x);
 
     for (int i = 0; i < window * 2; i++) {
       odeint::integrate_const(stepper, system, x, 0.0, Dt, Dt);
@@ -93,6 +138,8 @@ class Evaluator {
 
   state_t x;
   state_t dx;
+
+  initialize::Const<state_t> initer;
 };
 
 template <typename System>

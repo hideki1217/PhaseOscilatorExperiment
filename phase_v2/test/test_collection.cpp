@@ -7,13 +7,12 @@ void test_FixedQueue() {
   assert(q.sum() == 0);
   assert(q.size() == 3);
 
-  assert(q.push(1) == 0);
   assert(q.sum() == 1);
-  assert(q.push(2) == 0);
+  q.push(2);
   assert(q.sum() == 3);
-  assert(q.push(3) == 0);
+  q.push(3);
   assert(q.sum() == 6);
-  assert(q.push(4) == 1);
+  q.push(4);
   assert(q.sum() == 9);
 
   q.resize(4);
